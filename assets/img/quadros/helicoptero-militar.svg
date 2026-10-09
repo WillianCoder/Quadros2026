@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03050b"/><stop offset=".55" stop-color="#101a2e"/><stop offset="1" stop-color="#2b2a35"/></linearGradient>
+    <radialGradient id="lua" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#cfe6ff" stop-opacity=".35"/><stop offset="1" stop-color="#cfe6ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="fus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c5446"/><stop offset=".5" stop-color="#2c3229"/><stop offset="1" stop-color="#121510"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a6b80"/><stop offset=".6" stop-color="#121a26"/><stop offset="1" stop-color="#05080d"/></linearGradient>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <circle cx="300" cy="220" r="240" fill="url(#lua)"/><circle cx="300" cy="220" r="62" fill="#e6f1ff" opacity=".85"/>
+  <g fill="#cfe" opacity=".6"><circle cx="700" cy="90" r="2"/><circle cx="980" cy="160" r="1.6"/><circle cx="1240" cy="80" r="2"/><circle cx="1420" cy="230" r="1.4"/><circle cx="560" cy="300" r="1.4"/></g>
+  <path d="M0 860 L120 800 L240 830 L380 760 L520 820 L660 790 L800 840 L960 780 L1120 830 L1280 770 L1500 820 V1000 H0Z" fill="#06080c"/>
+  <!-- rotor principal -->
+  <rect x="780" y="300" width="24" height="70" fill="#1a1d18"/>
+  <path d="M150 300 Q790 284 1440 300" stroke="#1a1d18" stroke-width="16" fill="none" stroke-linecap="round" opacity=".9"/>
+  <ellipse cx="792" cy="300" rx="34" ry="14" fill="#2c3229"/>
+  <!-- cauda -->
+  <path d="M520 470 L160 430 L130 440 L150 470 L520 520 Z" fill="url(#fus)" stroke="#7d8770" stroke-width="3"/>
+  <path d="M160 432 L120 330 L150 330 L200 438 Z" fill="url(#fus)" stroke="#7d8770" stroke-width="3"/>
+  <circle cx="140" cy="380" r="58" fill="none" stroke="#1a1d18" stroke-width="8" opacity=".8"/>
+  <path d="M250 470 L210 520 L300 520 Z" fill="#2c3229"/>
+  <!-- fuselagem -->
+  <path d="M500 450 Q520 380 640 368 L950 362 Q1080 362 1170 430 Q1250 480 1250 540 Q1248 600 1160 610 L620 616 Q520 612 500 560 Z" fill="url(#fus)" stroke="#8a9479" stroke-width="3"/>
+  <path d="M1030 380 Q1120 390 1180 450 Q1210 480 1214 520 L1060 520 Q1040 450 1030 380 Z" fill="url(#vidro)" stroke="#20261c" stroke-width="5"/>
+  <rect x="720" y="420" width="230" height="130" rx="10" fill="#1d2219" stroke="#5a6350" stroke-width="3"/>
+  <rect x="740" y="440" width="80" height="60" rx="6" fill="url(#vidro)"/>
+  <rect x="560" y="430" width="120" height="60" rx="8" fill="url(#vidro)" opacity=".8"/>
+  <path d="M640 368 L660 330 L940 326 L960 362" fill="#2c3229" stroke="#7d8770" stroke-width="3"/>
+  <text x="800" y="595" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="34" fill="#e8e2c8" opacity=".35" letter-spacing="4">ARMY</text>
+  <!-- trem de pouso -->
+  <path d="M700 616 L680 690 M1080 612 L1100 690" stroke="#1a1d18" stroke-width="12"/>
+  <path d="M600 694 H1200" stroke="#1a1d18" stroke-width="14" stroke-linecap="round"/>
+  <!-- luzes (apagadas) -->
+  <circle cx="1225" cy="580" r="14" fill="#f4f0dc" opacity=".55"/>
+  <circle cx="520" cy="500" r="8" fill="#4a0b0b"/>
+  <circle cx="165" cy="440" r="7" fill="#4a0b0b"/>
+</svg>

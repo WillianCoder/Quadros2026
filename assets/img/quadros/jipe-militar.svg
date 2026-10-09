@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020406"/><stop offset=".6" stop-color="#0d1a14"/><stop offset="1" stop-color="#1b2a1c"/></linearGradient>
+    <linearGradient id="lataria" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3925f"/><stop offset=".45" stop-color="#6e6038"/><stop offset="1" stop-color="#2b2514"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#55606a"/><stop offset=".5" stop-color="#151a1e"/><stop offset="1" stop-color="#07090b"/></linearGradient>
+    <radialGradient id="aro" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3a3524"/><stop offset=".75" stop-color="#5c5438"/><stop offset=".9" stop-color="#2a2616"/><stop offset="1" stop-color="#0c0b07"/></radialGradient>
+    <g id="roda"><circle r="112" fill="#0a0a08"/><g stroke="#1e1e18" stroke-width="10"><circle r="100" fill="none" stroke-dasharray="14 10"/></g><circle r="62" fill="url(#aro)"/><g fill="#1b1a12"><circle cx="0" cy="-34" r="7"/><circle cx="32" cy="-10" r="7"/><circle cx="20" cy="28" r="7"/><circle cx="-20" cy="28" r="7"/><circle cx="-32" cy="-10" r="7"/></g><circle r="16" fill="#7a6f4a"/></g>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <g fill="#cfe" opacity=".5"><circle cx="120" cy="90" r="2"/><circle cx="420" cy="150" r="1.5"/><circle cx="760" cy="70" r="2"/><circle cx="1050" cy="130" r="1.6"/><circle cx="1350" cy="80" r="2"/></g>
+  <path d="M0 650 L90 600 L150 620 L230 560 L300 600 L380 520 L460 590 L560 610 L1000 620 L1080 570 L1150 610 L1240 540 L1330 600 L1420 570 L1500 610 V650Z" fill="#07100b"/>
+  <rect y="650" width="1500" height="350" fill="#050806"/>
+  <path d="M0 860 Q500 840 1000 870 T1500 850" stroke="#9fb38a" stroke-opacity=".15" stroke-width="4" fill="none"/>
+  <ellipse cx="750" cy="822" rx="620" ry="24" fill="#000" opacity=".9"/>
+  <!-- corpo -->
+  <path d="M190 710 L196 560 Q198 520 240 516 L520 510 L560 400 Q568 380 600 380 L960 378 Q992 378 1002 400 L1040 500 L1270 520 Q1310 524 1312 560 L1316 700 Q1316 716 1300 716 L1182 716 A124 124 0 0 0 942 716 L560 716 A124 124 0 0 0 320 716 L206 716 Q190 716 190 710Z" fill="url(#lataria)" stroke="#c9b886" stroke-width="3"/>
+  <path d="M590 400 L960 398 L990 500 L570 500 Z" fill="url(#vidro)" stroke="#2a2616" stroke-width="5"/>
+  <path d="M780 398 V500" stroke="#3a3420" stroke-width="12"/>
+  <g fill="#4b4227" opacity=".8"><path d="M240 560 L380 552 L360 620 L230 626Z"/><path d="M700 560 L860 556 L830 640 L680 646Z"/><path d="M1080 560 L1220 566 L1200 640 L1070 636Z"/></g>
+  <path d="M196 600 H1312" stroke="#2b2514" stroke-width="6" opacity=".7"/>
+  <rect x="640" y="590" width="44" height="10" rx="5" fill="#2b2514"/>
+  <rect x="1300" y="560" width="22" height="40" rx="5" fill="#e8e2c8" opacity=".6"/>
+  <rect x="1290" y="640" width="48" height="56" rx="6" fill="#2b2514" stroke="#c9b886" stroke-width="2"/>
+  <rect x="184" y="560" width="16" height="36" rx="3" fill="#4a0b0b"/>
+  <path d="M640 380 L640 330 L690 330" stroke="#3a3420" stroke-width="8" fill="none"/>
+  <rect x="860" y="350" width="70" height="28" rx="6" fill="#3a3420"/>
+  <text x="880" y="690" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="42" fill="#efe6c6" opacity=".35">★</text>
+  <use href="#roda" x="440" y="716"/><use href="#roda" x="1062" y="716"/>
+</svg>

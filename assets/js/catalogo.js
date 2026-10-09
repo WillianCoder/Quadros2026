@@ -35,6 +35,11 @@ window.CATALOGO = {
       "id": "pesados",
       "nome": "Caminhões",
       "emoji": "🚛"
+    },
+    {
+      "id": "militares",
+      "nome": "Militares",
+      "emoji": "🪖"
     }
   ],
   "quadros": [
@@ -156,6 +161,148 @@ window.CATALOGO = {
             [
               62,
               52.2
+            ]
+          ],
+          "preco": 20,
+          "cor": "rosa",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "turbo-jdm",
+      "nome": "Turbo JDM",
+      "categoria": "esportivos",
+      "ativo": true,
+      "destaque": true,
+      "selo": "Novo",
+      "descricao": "Esportivo turbinado com aerofólio e chama no escapamento. Fica insano com neon rosa embaixo.",
+      "imagem": "assets/img/quadros/turbo-jdm.svg",
+      "proporcao": 1.5,
+      "preco": 199,
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "linha",
+          "pontos": [
+            [
+              82.93,
+              59.2
+            ],
+            [
+              86.53,
+              61.2
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-frio",
+          "padrao": true
+        },
+        {
+          "id": "lanternas",
+          "nome": "Lanternas",
+          "tipo": "linha",
+          "pontos": [
+            [
+              13.93,
+              58.2
+            ],
+            [
+              13.93,
+              61.2
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "chama",
+          "nome": "Chama do escapamento (turbo)",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              9.2,
+              68.7
+            ],
+            [
+              7.87,
+              68.7
+            ]
+          ],
+          "preco": 20,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo do carro",
+          "tipo": "linha",
+          "pontos": [
+            [
+              22.67,
+              77.2
+            ],
+            [
+              79.33,
+              77.2
+            ]
+          ],
+          "preco": 30,
+          "cor": "rosa",
+          "padrao": true
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              29.73,
+              71.2,
+              4.8
+            ],
+            [
+              72.4,
+              71.2,
+              4.8
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "aerofolio",
+          "nome": "Aerofólio",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.27,
+              47.2
+            ],
+            [
+              24.13,
+              47.2
+            ]
+          ],
+          "preco": 15,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "faixa",
+          "nome": "Faixa lateral",
+          "tipo": "linha",
+          "pontos": [
+            [
+              14,
+              64
+            ],
+            [
+              86.8,
+              64
             ]
           ],
           "preco": 20,
@@ -896,6 +1043,351 @@ window.CATALOGO = {
           ],
           "preco": 25,
           "cor": "azul-gelo",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "tanque-militar",
+      "nome": "Tanque de Guerra",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Novo",
+      "descricao": "Blindado de esteira no pôr do sol do deserto. LED no canhão, na torre e embaixo da esteira.",
+      "imagem": "assets/img/quadros/tanque-militar.svg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "leds": [
+        {
+          "id": "farol",
+          "nome": "Farol",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              84,
+              61.2
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanterna",
+          "nome": "Lanterna traseira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              14.07,
+              60.2
+            ],
+            [
+              14.07,
+              62.8
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "canhao",
+          "nome": "Linha do canhão",
+          "tipo": "linha",
+          "pontos": [
+            [
+              66,
+              47
+            ],
+            [
+              95.33,
+              47
+            ]
+          ],
+          "preco": 20,
+          "cor": "verde",
+          "padrao": true
+        },
+        {
+          "id": "disparo",
+          "nome": "Clarão na boca do canhão",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              96.4,
+              47
+            ]
+          ],
+          "preco": 15,
+          "cor": "laranja",
+          "padrao": false
+        },
+        {
+          "id": "torre",
+          "nome": "Contorno da torre",
+          "tipo": "linha",
+          "pontos": [
+            [
+              31.33,
+              55.2
+            ],
+            [
+              34.67,
+              44.6
+            ],
+            [
+              36,
+              42.2
+            ],
+            [
+              39.33,
+              41.8
+            ],
+            [
+              60,
+              41.4
+            ],
+            [
+              64,
+              41.6
+            ],
+            [
+              66,
+              45
+            ],
+            [
+              70,
+              54.8
+            ]
+          ],
+          "preco": 25,
+          "cor": "verde",
+          "padrao": false
+        },
+        {
+          "id": "esteira",
+          "nome": "Neon embaixo da esteira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              20,
+              80
+            ],
+            [
+              79.33,
+              80
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": true
+        }
+      ]
+    },
+    {
+      "id": "jipe-militar",
+      "nome": "Jipe Militar 4x4",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "",
+      "descricao": "Utilitário militar no deserto à noite, com pneus off-road e giroflex no teto.",
+      "imagem": "assets/img/quadros/jipe-militar.svg",
+      "proporcao": 1.5,
+      "preco": 199,
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "linha",
+          "pontos": [
+            [
+              87.4,
+              56.2
+            ],
+            [
+              87.4,
+              59.8
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanternas",
+          "nome": "Lanternas",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.8,
+              56.2
+            ],
+            [
+              12.8,
+              59.4
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "teto",
+          "nome": "Luzes do teto",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              58.33,
+              36.4
+            ],
+            [
+              61,
+              36.4
+            ]
+          ],
+          "preco": 15,
+          "cor": "amarelo",
+          "padrao": true
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              29.33,
+              71.6,
+              4.4
+            ],
+            [
+              70.8,
+              71.6,
+              4.4
+            ]
+          ],
+          "preco": 25,
+          "cor": "laranja",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo do jipe",
+          "tipo": "linha",
+          "pontos": [
+            [
+              22,
+              80
+            ],
+            [
+              79.33,
+              80
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "helicoptero-militar",
+      "nome": "Helicóptero Militar",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "",
+      "descricao": "Helicóptero de combate sob a lua. O rotor aceso é o que mais chama atenção.",
+      "imagem": "assets/img/quadros/helicoptero-militar.svg",
+      "proporcao": 1.5,
+      "preco": 209,
+      "leds": [
+        {
+          "id": "rotor",
+          "nome": "Hélice principal (rotor)",
+          "tipo": "linha",
+          "pontos": [
+            [
+              10,
+              30
+            ],
+            [
+              52.67,
+              28.8
+            ],
+            [
+              96,
+              30
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": true
+        },
+        {
+          "id": "cauda",
+          "nome": "Hélice da cauda",
+          "tipo": "anel",
+          "pontos": [
+            [
+              9.33,
+              38,
+              3.87
+            ]
+          ],
+          "preco": 15,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "holofote",
+          "nome": "Holofote",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              81.67,
+              58
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-frio",
+          "padrao": true
+        },
+        {
+          "id": "navegacao",
+          "nome": "Luzes de navegação",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              34.67,
+              50
+            ],
+            [
+              11,
+              44
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              40,
+              72.2
+            ],
+            [
+              80,
+              72.2
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
           "padrao": false
         }
       ]
