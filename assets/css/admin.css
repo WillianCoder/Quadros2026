@@ -1,0 +1,76 @@
+/* Painel do administrador (admin.html). */
+.admin .topo .container:first-child { justify-content: space-between; }
+.abas { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
+.aba { flex: none; min-height: 42px; padding: 8px 14px; border-radius: 12px; border: 1px solid transparent; background: none; color: var(--muted); font-weight: 700; cursor: pointer; }
+.aba:hover { color: var(--texto); background: rgba(255, 255, 255, .05); }
+.aba[aria-current="page"] { color: var(--texto); border-color: var(--ciano); background: rgba(34, 230, 255, .1); }
+#painel { padding: 24px 0 120px; }
+#painel > h1 { font-size: 1.6rem; }
+.grade-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.admin .card { margin-bottom: 16px; }
+.admin .card h2 { font-size: 1.15rem; }
+.numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.numero { padding: 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--borda); }
+.numero b { display: block; font-family: var(--fonte-titulo); font-size: 2rem; color: var(--ciano); }
+.grande-acao { display: flex; align-items: center; gap: 16px; width: 100%; padding: 22px; border-radius: 20px; border: 2px dashed rgba(34, 230, 255, .5); background: rgba(34, 230, 255, .06); color: var(--texto); cursor: pointer; text-align: left; margin-bottom: 16px; }
+.grande-acao:hover { background: rgba(34, 230, 255, .12); }
+.grande-acao .ico { font-size: 2.2rem; }
+.grande-acao b { display: block; font-size: 1.15rem; }
+.passo-a-passo { padding-left: 1.2em; }
+.passo-a-passo li { margin-bottom: 6px; }
+.status-ok { color: var(--verde); font-weight: 700; }
+.status-falta { color: var(--amarelo); font-weight: 700; }
+
+/* Lista de quadros */
+.lista-quadros { display: grid; gap: 12px; }
+.item-quadro { display: grid; grid-template-columns: 140px 1fr auto; gap: 14px; align-items: center; padding: 12px; border-radius: 16px; background: var(--card); border: 1px solid var(--borda); }
+.item-quadro img { width: 140px; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; background: #000; }
+.item-quadro h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.item-quadro.inativo { opacity: .55; }
+.item-acoes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 640px) { .item-quadro { grid-template-columns: 96px 1fr; } .item-quadro img { width: 96px; } .item-acoes { grid-column: 1 / -1; justify-content: flex-start; } }
+
+/* Editor de quadro */
+.editor { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
+.editor-palco { position: sticky; top: 70px; align-self: start; padding: 18px; border-radius: 18px; background: radial-gradient(120% 90% at 50% 10%, #11131c, #050509); }
+.editor-palco .dica { text-align: center; color: var(--muted); font-size: .9rem; margin: 10px 0 0; }
+.editor-palco .dica b { color: var(--ciano); }
+.editor h3 { display: flex; align-items: center; gap: 8px; margin: 18px 0 10px; }
+.editor h3:first-child { margin-top: 0; }
+.area-ed { border: 1px solid var(--borda2); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: var(--card2); }
+.area-ed.sel { border-color: var(--ciano); box-shadow: 0 0 0 1px var(--ciano) inset, 0 0 18px rgba(34, 230, 255, .2); }
+.area-ed .linha { gap: 8px; }
+.area-ed .input { min-height: 40px; padding: 6px 10px; }
+.mini { font-size: .82rem; color: var(--muted); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.foto-atual { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 12px; background: #000; margin-bottom: 8px; }
+@media (max-width: 860px) { .editor { grid-template-columns: minmax(0, 1fr); } .editor-palco { position: sticky; top: 0; z-index: 5; padding: 10px; } }
+.modal-tela { width: min(1180px, 100%); }
+
+/* Listas editáveis */
+.tabela { display: grid; gap: 8px; }
+.tabela-linha { display: grid; gap: 8px; align-items: end; padding: 10px; border-radius: 12px; background: var(--card2); border: 1px solid var(--borda); }
+.tabela-linha label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); font-weight: 600; }
+.tabela-linha .input { min-height: 40px; padding: 6px 10px; }
+.tabela-linha .acoes { display: flex; gap: 4px; }
+.tabela-linha input[type="color"] { width: 48px; height: 40px; padding: 2px; border-radius: 10px; border: 1px solid var(--borda2); background: none; }
+.tabela-linha input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--ciano); }
+
+/* Pedidos */
+.pedido { padding: 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--borda); margin-bottom: 12px; }
+.pedido-topo { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.pedido-topo .codigo { font-family: var(--fonte-titulo); font-weight: 700; color: var(--ciano); letter-spacing: .08em; }
+.pedido pre { white-space: pre-wrap; font: .9rem/1.5 var(--fonte); color: var(--muted); margin: 10px 0; }
+.etiqueta { padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; border: 1px solid; }
+.st-novo { color: var(--amarelo); } .st-confirmado { color: var(--ciano); } .st-producao { color: #b48cff; }
+.st-enviado { color: #7fb2ff; } .st-entregue { color: var(--verde); } .st-cancelado { color: var(--perigo); }
+.aviso { padding: 12px 14px; border-radius: 12px; background: rgba(255, 212, 0, .08); border: 1px solid rgba(255, 212, 0, .35); margin: 0 0 14px; }
+
+/* Links e QR */
+.qr { width: 180px; padding: 10px; background: #fff; border-radius: 12px; }
+.url-caixa { display: flex; gap: 8px; flex-wrap: wrap; }
+.url-caixa .input { flex: 1; min-width: 220px; font-family: ui-monospace, monospace; font-size: .9rem; }
+.regras { white-space: pre; overflow: auto; max-height: 320px; font: .78rem/1.4 ui-monospace, monospace; padding: 12px; border-radius: 12px; background: #05060a; border: 1px solid var(--borda); }
+
+/* Barra de rascunho */
+.barra-rascunho { position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #2a2400; border-top: 1px solid var(--amarelo); color: #fff6c2; font-weight: 600; }

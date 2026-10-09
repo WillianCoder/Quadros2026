@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#090205"/><stop offset=".6" stop-color="#2a0610"/><stop offset="1" stop-color="#3d0a16"/></linearGradient>
+    <linearGradient id="carenagem" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3b4f"/><stop offset=".45" stop-color="#b00f22"/><stop offset="1" stop-color="#3a0309"/></linearGradient>
+    <linearGradient id="preto" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3d46"/><stop offset="1" stop-color="#0a0b0f"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8090b0" stop-opacity=".8"/><stop offset="1" stop-color="#101525" stop-opacity=".9"/></linearGradient>
+    <radialGradient id="aro" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2a2c33"/><stop offset=".78" stop-color="#2a2c33"/><stop offset=".84" stop-color="#ff3b4f"/><stop offset=".9" stop-color="#1a1b20"/><stop offset="1" stop-color="#050506"/></radialGradient>
+    <g id="roda"><circle r="122" fill="#060607"/><circle r="116" fill="none" stroke="#1d1e24" stroke-width="5"/><circle r="88" fill="url(#aro)"/>
+      <g stroke="#41444d" stroke-width="10" stroke-linecap="round"><path d="M0 -18 L0 -74 M17 6 L64 37 M-17 6 L-64 37"/></g>
+      <circle r="62" fill="none" stroke="#9aa1ad" stroke-width="4" stroke-dasharray="14 8"/><circle r="20" fill="#b8bec9"/></g>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <g stroke="#ff2d4b" stroke-opacity=".08" stroke-width="40"><path d="M-100 300 L1600 120 M-100 420 L1600 260"/></g>
+  <rect y="660" width="1500" height="340" fill="#08020a"/>
+  <g><rect x="0" y="660" width="1500" height="18" fill="#fff" opacity=".08"/>
+    <g fill="#ff2d4b" opacity=".5"><rect x="0" y="660" width="60" height="18"/><rect x="120" y="660" width="60" height="18"/><rect x="240" y="660" width="60" height="18"/><rect x="360" y="660" width="60" height="18"/><rect x="480" y="660" width="60" height="18"/><rect x="600" y="660" width="60" height="18"/><rect x="720" y="660" width="60" height="18"/><rect x="840" y="660" width="60" height="18"/><rect x="960" y="660" width="60" height="18"/><rect x="1080" y="660" width="60" height="18"/><rect x="1200" y="660" width="60" height="18"/><rect x="1320" y="660" width="60" height="18"/><rect x="1440" y="660" width="60" height="18"/></g></g>
+  <ellipse cx="750" cy="846" rx="480" ry="20" fill="#000" opacity=".9"/>
+  <use href="#roda" x="430" y="722"/><use href="#roda" x="1080" y="722"/>
+  <!-- balança e garfo -->
+  <path d="M430 722 L700 640" stroke="url(#preto)" stroke-width="30" stroke-linecap="round"/>
+  <path d="M1080 722 L985 440" stroke="#c9a227" stroke-width="26" stroke-linecap="round"/>
+  <path d="M1080 722 L1030 580" stroke="#8a8f99" stroke-width="16" stroke-linecap="round"/>
+  <!-- motor -->
+  <path d="M640 560 L860 560 L900 650 L820 700 L680 700 L630 640 Z" fill="url(#preto)" stroke="#555a66" stroke-width="3"/>
+  <path d="M690 590 H840 M700 620 H850 M710 650 H840" stroke="#6b707c" stroke-width="5"/>
+  <path d="M860 680 Q760 760 560 740 L500 730" stroke="#aeb4be" stroke-width="18" fill="none" stroke-linecap="round"/>
+  <!-- carenagem -->
+  <path d="M1128 520 Q1110 470 1040 440 L990 420 Q960 410 930 420 L880 448 Q820 440 760 446 L700 470 Q600 466 520 450 L380 414 Q370 412 372 422 L470 500 Q560 520 640 540 L680 560 L880 560 Q930 600 1000 600 Q1080 590 1110 560 Z" fill="url(#carenagem)" stroke="#ff8a96" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M990 420 Q1000 360 1060 344 Q1070 380 1050 440 Z" fill="url(#vidro)" stroke="#2a3045" stroke-width="3"/>
+  <path d="M880 448 Q820 418 760 426 L700 454 Q790 456 880 448Z" fill="url(#preto)"/>
+  <path d="M700 470 Q610 452 540 446 L520 450 Q600 470 690 474Z" fill="#0b0b0f"/>
+  <path d="M930 470 Q1000 480 1060 520 Q1000 520 940 500Z" fill="#fff" opacity=".25"/>
+  <path d="M480 494 Q700 530 900 520" stroke="#fff" stroke-opacity=".35" stroke-width="4" fill="none"/>
+  <path d="M1096 520 L1128 524 L1112 548 L1080 540Z" fill="#e8eef8" opacity=".75"/>
+  <path d="M378 418 L404 424 L398 436 L376 428Z" fill="#4a0b0b"/>
+  <path d="M960 410 L1010 360" stroke="#1a1b20" stroke-width="10" stroke-linecap="round"/>
+</svg>

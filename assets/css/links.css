@@ -1,0 +1,19 @@
+/* Página de links (links.html) — para a bio do Instagram, Linktree, WhatsApp. */
+.pagina-links { background: radial-gradient(80% 50% at 50% 0%, rgba(34, 230, 255, .14), transparent 70%), radial-gradient(80% 60% at 50% 100%, rgba(255, 43, 214, .16), transparent 70%), var(--bg); }
+.links { width: min(520px, 100% - 32px); margin: 0 auto; padding: 40px 0 30px; text-align: center; }
+.links-logo { border-radius: 22px; box-shadow: 0 0 40px rgba(34, 230, 255, .35), 0 0 60px rgba(255, 43, 214, .25); }
+.links h1 { margin: 14px 0 6px; font-size: 1.7rem; letter-spacing: .04em; }
+.links-bio { color: var(--muted); margin-bottom: 20px; }
+.links-quadro { display: block; padding: 18px 26px; border-radius: 20px; background: radial-gradient(100% 100% at 50% 0%, #10121b, #040408); border: 1px solid var(--borda); margin-bottom: 20px; }
+.links-lista { display: grid; gap: 12px; margin-bottom: 26px; }
+.link {
+  display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 12px 18px; border-radius: 16px; text-decoration: none; color: var(--texto); font-weight: 700;
+  background: var(--card); border: 1px solid var(--borda2); transition: transform .15s, box-shadow .2s, border-color .2s; text-align: left;
+}
+.link:hover { transform: translateY(-2px); border-color: var(--ciano); box-shadow: 0 0 24px rgba(34, 230, 255, .2); }
+.link .ico { font-size: 1.5rem; width: 34px; text-align: center; flex: none; }
+.link small { display: block; color: var(--muted); font-weight: 500; font-size: .82rem; }
+.link-principal { background: var(--neon); color: #05060a; border: 0; box-shadow: 0 8px 30px rgba(34, 230, 255, .3), 0 8px 30px rgba(255, 43, 214, .25); }
+.link-principal small { color: rgba(0, 0, 0, .65); }
+.link-wa { background: var(--verde); color: #04130a; border: 0; }
+.link-wa small { color: rgba(0, 0, 0, .6); }

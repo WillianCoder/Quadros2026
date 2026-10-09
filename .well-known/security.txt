@@ -1,0 +1,5 @@
+# Política de divulgação responsável
+Contact: https://github.com/WillianCoder/Quadros2026/security/advisories/new
+Expires: 2027-10-09T00:00:00.000Z
+Preferred-Languages: pt-BR, en
+Policy: https://github.com/WillianCoder/Quadros2026/blob/main/SECURITY.md

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#080503"/><stop offset=".6" stop-color="#2b1606"/><stop offset="1" stop-color="#4a2608"/></linearGradient>
+    <radialGradient id="sol" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb84d" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a00" stop-opacity="0"/></radialGradient>
+    <linearGradient id="tanque" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a30"/><stop offset=".3" stop-color="#101014"/><stop offset="1" stop-color="#030304"/></linearGradient>
+    <linearGradient id="cromo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#9aa1ad"/><stop offset=".6" stop-color="#e2e6ec"/><stop offset="1" stop-color="#4b505b"/></linearGradient>
+    <g id="roda"><circle r="112" fill="#060607"/><circle r="106" fill="none" stroke="#1d1e24" stroke-width="6"/><circle r="84" fill="none" stroke="url(#cromo)" stroke-width="8"/>
+      <g stroke="#b8bec9" stroke-width="2.5"><path d="M0 -84 L0 84 M-84 0 L84 0 M-59 -59 L59 59 M-59 59 L59 -59 M-32 -78 L32 78 M-78 -32 L78 32 M-78 32 L78 -32 M-32 78 L32 -78"/></g>
+      <circle r="22" fill="url(#cromo)"/></g>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <circle cx="300" cy="560" r="360" fill="url(#sol)"/>
+  <path d="M0 660 L0 560 L60 560 L60 470 L140 470 L140 560 L210 560 L230 420 L250 560 L380 560 L400 500 L420 560 L620 560 L620 660Z M1100 660 L1140 520 L1200 520 L1220 460 L1300 460 L1320 520 L1420 520 L1500 600 L1500 660Z" fill="#140a03"/>
+  <rect y="660" width="1500" height="340" fill="#0a0502"/>
+  <path d="M0 860 H1500" stroke="#ffb84d" stroke-opacity=".2" stroke-width="4" stroke-dasharray="120 80"/>
+  <ellipse cx="760" cy="842" rx="560" ry="20" fill="#000" opacity=".9"/>
+  <use href="#roda" x="400" y="728"/><use href="#roda" x="1170" y="728"/>
+  <!-- garfo longo -->
+  <path d="M1170 728 L960 400" stroke="url(#cromo)" stroke-width="20" stroke-linecap="round"/>
+  <path d="M1150 740 L945 420" stroke="url(#cromo)" stroke-width="10" stroke-linecap="round" opacity=".7"/>
+  <!-- guidão -->
+  <path d="M950 400 L930 300 L860 290" stroke="url(#cromo)" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="1005" cy="470" r="38" fill="url(#cromo)"/><circle cx="1018" cy="470" r="28" fill="#f4e9c8" opacity=".85"/>
+  <!-- quadro -->
+  <path d="M400 728 L560 600 L900 520 L960 420" stroke="#111" stroke-width="22" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M600 720 L900 700 L960 440" stroke="#111" stroke-width="18" fill="none" stroke-linecap="round"/>
+  <!-- paralama traseiro -->
+  <path d="M270 690 Q300 580 420 580 Q520 584 540 650" stroke="url(#tanque)" stroke-width="34" fill="none" stroke-linecap="round"/>
+  <!-- banco -->
+  <path d="M480 600 Q560 560 680 572 Q700 600 650 612 Q560 620 480 612Z" fill="#1b120a" stroke="#4a3018" stroke-width="3"/>
+  <!-- tanque -->
+  <path d="M690 560 Q740 500 860 494 Q930 494 940 530 Q930 572 860 580 Q760 590 690 576Z" fill="url(#tanque)" stroke="#555" stroke-width="2"/>
+  <path d="M730 540 Q800 510 900 516" stroke="#ff9a2a" stroke-width="6" fill="none" opacity=".9"/>
+  <!-- motor V2 -->
+  <g fill="url(#cromo)" stroke="#333" stroke-width="2"><path d="M650 600 L700 590 L740 680 L690 700Z"/><path d="M780 590 L830 590 L800 690 L750 690Z"/></g>
+  <g stroke="#333" stroke-width="3"><path d="M662 612 L708 604 M670 630 L716 622 M678 648 L724 640 M790 606 L826 606 M786 626 L822 626 M782 646 L818 646"/></g>
+  <ellipse cx="740" cy="710" rx="80" ry="34" fill="url(#cromo)"/>
+  <!-- escapes -->
+  <path d="M720 720 Q600 770 300 760" stroke="url(#cromo)" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M780 720 Q640 790 320 790" stroke="url(#cromo)" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <rect x="262" y="640" width="22" height="18" rx="4" fill="#4a0b0b"/>
+</svg>

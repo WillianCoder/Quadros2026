@@ -1,0 +1,7 @@
+# Instruções para buscadores. O painel do dono (admin.html) não deve aparecer em buscas.
+# Os padrões com * valem tanto na raiz do domínio quanto numa subpasta (GitHub Pages).
+User-agent: *
+Disallow: /admin.html
+Disallow: /*admin.html
+Disallow: /*montar.html?c=
+Allow: /

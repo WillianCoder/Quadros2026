@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Painel — Neon Garage</title>
+  <meta name="theme-color" content="#06070c">
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body class="admin">
+  <header class="topo">
+    <div class="container">
+      <a class="logo" href="./" target="_blank" rel="noopener"><img src="assets/img/icone.svg" alt="" width="36" height="36"><span>Painel</span></a>
+      <button type="button" class="btn btn-primario btn-peq" id="publicar">🚀 Salvar e publicar</button>
+    </div>
+    <div class="container"><nav class="abas" id="abas" aria-label="Seções do painel"></nav></div>
+  </header>
+  <main class="container" id="painel" aria-live="polite"><p class="centro"><span class="carregando"></span></p></main>
+  <div class="barra-rascunho" id="barra-rascunho" hidden>
+    <span id="rasc-txt"></span>
+    <div class="linha">
+      <a class="btn btn-peq" id="ver-rascunho" href="index.html?rascunho=1" target="_blank" rel="noopener">👀 Ver no site</a>
+      <button type="button" class="btn btn-peq btn-fantasma" id="descartar">Descartar</button>
+      <button type="button" class="btn btn-peq btn-primario" id="publicar2">🚀 Publicar</button>
+    </div>
+  </div>
+  <noscript><p class="centro">O painel precisa de JavaScript.</p></noscript>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/catalogo.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/vendor/qrcode.js"></script>
+  <script src="assets/js/quadro.js"></script>
+  <script src="assets/js/fotos.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+rules_version = '2';
+// Regras de segurança do Firestore dos quadros de LED.
+// O painel (admin.html → Configurações) mostra este texto com o seu e-mail no lugar
+// de ADMIN_EMAIL, pronto para colar em Firestore → Regras → Publicar.
+//
+// Quem pode o quê:
+//  - Cliente (login anônimo, sem cadastro): cria UM pedido novo em seu nome e lê só os próprios pedidos.
+//  - Administrador (e-mail confirmado): lista, muda a situação, anota e apaga pedidos.
+//  - Ninguém mais lê ou grava nada.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() { return request.auth != null; }
+    function isAdmin() {
+      return logado() && request.auth.token.email == "ADMIN_EMAIL" && request.auth.token.email_verified == true;
+    }
+    function texto(v, max) { return v is string && v.size() <= max; }
+    function pedidoNovoOk(id, d) {
+      return id.matches('^[a-z2-9]{8}$') && d.id == id
+        && d.keys().hasOnly(['id', 'dono', 'status', 'quadro', 'valor', 'configJson', 'resumo', 'cliente', 'temFoto', 'nota', 'criadoEm', 'atualizadoEm'])
+        && d.dono == request.auth.uid && d.status == 'novo' && d.nota == ''
+        && texto(d.quadro, 80) && d.valor is number && d.valor >= 0 && d.valor < 100000
+        && texto(d.configJson, 8000) && texto(d.resumo, 3000) && d.temFoto is bool
+        && d.cliente is map && d.cliente.keys().hasOnly(['nome', 'whatsapp', 'cidade'])
+        && texto(d.cliente.nome, 80) && d.cliente.nome.size() >= 2
+        && texto(d.cliente.whatsapp, 15) && d.cliente.whatsapp.matches('^[0-9]{10,15}$')
+        && texto(d.cliente.cidade, 80)
+        && d.criadoEm is int && d.atualizadoEm is int
+        && d.criadoEm > request.time.toMillis() - 600000 && d.criadoEm < request.time.toMillis() + 600000;
+    }
+
+    match /pedidos/{id} {
+      allow get: if isAdmin() || (logado() && resource.data.dono == request.auth.uid);
+      allow list: if isAdmin();
+      allow create: if logado() && pedidoNovoOk(id, request.resource.data);
+      // Só o administrador muda a situação e as anotações (o resto do pedido não muda).
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'nota', 'atualizadoEm'])
+        && request.resource.data.status in ['novo', 'confirmado', 'producao', 'enviado', 'entregue', 'cancelado']
+        && texto(request.resource.data.nota, 1000);
+      allow delete: if isAdmin();
+
+      // Foto do veículo do cliente (só no pedido "Seu veículo no quadro").
+      match /foto/{n} {
+        function pedido() { return get(/databases/$(database)/documents/pedidos/$(id)).data; }
+        allow get: if isAdmin() || (logado() && pedido().dono == request.auth.uid);
+        allow create: if logado() && n == '0' && pedido().dono == request.auth.uid && pedido().status == 'novo' && pedido().temFoto == true
+          && request.resource.data.keys().hasOnly(['src']) && request.resource.data.src is string
+          && request.resource.data.src.size() < 1000000
+          && request.resource.data.src.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$');
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Neon Garage — Quadros de carros e motos com LED",
+  "short_name": "Neon Garage",
+  "description": "Quadros de carros, motos e caminhões com LED. Você escolhe onde acende.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06070c",
+  "theme_color": "#06070c",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    { "src": "assets/img/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Monte o seu quadro de LED — Neon Garage</title>
+  <meta name="description" content="Escolha o modelo, toque onde quer LED, escolha cores, efeito, tamanho e moldura. Veja a prévia na hora e peça pelo WhatsApp.">
+  <meta name="theme-color" content="#06070c">
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Monte seu quadro de LED — você escolhe onde acende 💡">
+  <meta property="og:description" content="Toque no quadro, acenda faróis, rodas e neon e veja como fica.">
+  <meta property="og:image" content="assets/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/montar.css">
+</head>
+<body class="pagina-montar">
+  <header class="topo">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/img/icone.svg" alt="" width="36" height="36"><span data-marca>Neon Garage</span></a>
+      <nav class="menu" aria-label="Principal"><a href="./#modelos">Modelos</a><a href="./#duvidas">Dúvidas</a></nav>
+      <a class="btn btn-wa btn-peq" data-whatsapp="Olá! Estou montando meu quadro de LED no site e tenho uma dúvida." href="#">💬 Ajuda</a>
+    </div>
+  </header>
+
+  <main class="container montar" id="conteudo">
+    <!-- Prévia -->
+    <section class="palco" aria-label="Prévia do seu quadro">
+      <div class="parede" id="parede">
+        <div class="palco-quadro" id="palco-quadro"></div>
+        <p class="dica" id="dica" aria-live="polite"></p>
+      </div>
+      <div class="palco-barra">
+        <button type="button" class="btn btn-peq" id="b-luz" aria-pressed="true">🌙 Luz apagada</button>
+        <button type="button" class="btn btn-peq" id="b-leds" aria-pressed="true">💡 LEDs ligados</button>
+        <button type="button" class="btn btn-peq btn-fantasma" id="b-compartilhar">🔗 Compartilhar</button>
+      </div>
+    </section>
+
+    <!-- Escolhas -->
+    <div class="painel">
+      <h1 class="titulo-montar">Monte o seu <span class="neon-txt">quadro de LED</span></h1>
+
+      <section class="etapa" id="etapa-modelo">
+        <h2><span class="n">1</span> Escolha o modelo</h2>
+        <div class="modelos" id="modelos" role="listbox" aria-label="Modelos"></div>
+        <div class="foto-box" id="foto-box" hidden>
+          <label class="btn btn-primario btn-bloco" for="foto-arquivo">📷 <span id="foto-rotulo">Enviar a foto do meu veículo</span></label>
+          <input type="file" id="foto-arquivo" accept="image/*" class="sr-only">
+          <p class="ajuda">Dica: foto de lado, inteira, com boa luz. Ela fica só no seu celular até você enviar o pedido.</p>
+        </div>
+      </section>
+
+      <section class="etapa" id="etapa-leds">
+        <h2><span class="n">2</span> Onde acender?</h2>
+        <p class="ajuda" id="ajuda-areas">Toque nas partes abaixo <b>ou direto no quadro</b> (nas linhas pontilhadas) para acender.</p>
+        <div class="areas" id="areas"></div>
+        <div class="livre" id="livre">
+          <h3>➕ LED onde eu quiser</h3>
+          <p class="ajuda" id="livre-ajuda"></p>
+          <div class="chips" id="ferramentas" role="group" aria-label="Tipo de LED extra"></div>
+          <div class="anel-tamanho" id="anel-tamanho" hidden>
+            <span class="pequeno">Tamanho do anel:</span>
+            <div class="chips" id="aneis"></div>
+          </div>
+          <div class="cores-linha"><span class="pequeno">Cor:</span><div class="paleta" id="paleta-livre"></div></div>
+          <ul class="extras-lista" id="extras-lista"></ul>
+        </div>
+      </section>
+
+      <section class="etapa" id="etapa-efeito">
+        <h2><span class="n">3</span> Cor e efeito</h2>
+        <div class="cores-linha"><span class="pequeno">Pintar todos os LEDs de:</span><div class="paleta" id="paleta-tudo"></div></div>
+        <label class="check" id="rgb-box"><input type="checkbox" id="rgb"><span><b id="rgb-nome">RGB com controle remoto</b><span class="ajuda">Muda de cor e de efeito quando quiser.</span></span><span class="preco-mais" id="rgb-preco"></span></label>
+        <h3 class="sub">Efeito</h3>
+        <div class="chips" id="efeitos" role="group" aria-label="Efeito"></div>
+      </section>
+
+      <section class="etapa" id="etapa-tamanho">
+        <h2><span class="n">4</span> Tamanho e moldura</h2>
+        <h3 class="sub">Tamanho</h3>
+        <div class="chips" id="tamanhos" role="group" aria-label="Tamanho"></div>
+        <h3 class="sub">Moldura</h3>
+        <div class="chips" id="molduras" role="group" aria-label="Moldura"></div>
+      </section>
+
+      <section class="etapa" id="etapa-extras">
+        <h2><span class="n">5</span> Capricho extra <span class="opcional">opcional</span></h2>
+        <div id="acabamentos"></div>
+        <label class="campo"><span>Alguma observação?</span><textarea class="input" id="obs" maxlength="500" placeholder="Ex.: quero a placa ABC-1234 na plaquinha, o carro é prata…"></textarea></label>
+      </section>
+
+      <section class="etapa etapa-final" id="etapa-final">
+        <h2><span class="n">6</span> Seu pedido</h2>
+        <ul class="conta" id="conta"></ul>
+        <p class="total-linha"><span>Total estimado</span><b id="total">R$ 0</b></p>
+        <p class="ajuda" id="info-entrega"></p>
+        <form id="form-pedido" novalidate>
+          <label class="campo"><span>Seu nome</span><input class="input" id="c-nome" autocomplete="name" maxlength="80" required></label>
+          <label class="campo"><span>Seu WhatsApp (com DDD)</span><input class="input" id="c-whats" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="(11) 91234-5678" required></label>
+          <label class="campo"><span>Cidade / UF</span><input class="input" id="c-cidade" autocomplete="address-level2" maxlength="80" placeholder="Ex.: Campinas / SP"></label>
+          <button type="submit" class="btn btn-wa btn-grande btn-bloco" id="enviar">Enviar pedido pelo WhatsApp</button>
+          <p class="ajuda centro">Sem compromisso: a gente confirma tudo com você antes de produzir. Ao enviar, você concorda com os <a href="termos.html">termos</a> e a <a href="privacidade.html">política de privacidade</a>.</p>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <div class="barra-total" id="barra-total">
+    <div><span class="pequeno muted">Total estimado</span><b id="total-barra">R$ 0</b></div>
+    <a class="btn btn-primario" href="#etapa-final">Finalizar →</a>
+  </div>
+
+  <footer class="rodape rodape-curto">
+    <div class="container"><p class="pequeno">© <span data-ano></span> <span data-marca></span> · <a href="termos.html">Termos</a> · <a href="privacidade.html">Privacidade</a> · <a href="links.html">Links</a></p></div>
+  </footer>
+
+  <noscript><p class="centro">Ative o JavaScript para montar seu quadro.</p></noscript>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/catalogo.js"></script>
+  <script src="assets/js/rascunho.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/quadro.js"></script>
+  <script src="assets/js/fotos.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/montar.js"></script>
+</body>
+</html>

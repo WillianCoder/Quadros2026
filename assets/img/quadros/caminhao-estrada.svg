@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03050c"/><stop offset=".65" stop-color="#0c1630"/><stop offset="1" stop-color="#1b2448"/></linearGradient>
+    <linearGradient id="cabine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0f2f6"/><stop offset=".45" stop-color="#a9afbd"/><stop offset="1" stop-color="#3a3f4c"/></linearGradient>
+    <linearGradient id="bau" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3550"/><stop offset="1" stop-color="#0d1222"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6b7fa6"/><stop offset=".5" stop-color="#16203a"/><stop offset="1" stop-color="#070b16"/></linearGradient>
+    <radialGradient id="aro" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d7dbe2"/><stop offset=".6" stop-color="#a5abb6"/><stop offset=".8" stop-color="#3b3f48"/><stop offset="1" stop-color="#121318"/></radialGradient>
+    <g id="roda"><circle r="74" fill="#060608"/><circle r="68" fill="none" stroke="#1d1e24" stroke-width="5"/><circle r="44" fill="url(#aro)"/><circle r="16" fill="#555b66"/><g fill="#2a2d35"><circle cx="0" cy="-27" r="4"/><circle cx="26" cy="-8" r="4"/><circle cx="16" cy="22" r="4"/><circle cx="-16" cy="22" r="4"/><circle cx="-26" cy="-8" r="4"/></g></g>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <g fill="#cfe" opacity=".6"><circle cx="100" cy="80" r="2"/><circle cx="400" cy="140" r="1.5"/><circle cx="700" cy="60" r="2"/><circle cx="980" cy="120" r="1.5"/><circle cx="1300" cy="70" r="2"/><circle cx="1420" cy="200" r="1.4"/><circle cx="250" cy="230" r="1.4"/></g>
+  <path d="M0 640 L180 520 L320 600 L520 470 L720 590 L900 500 L1100 600 L1300 480 L1500 590 V640Z" fill="#080c1a"/>
+  <rect y="640" width="1500" height="360" fill="#05070d"/>
+  <path d="M0 800 H1500" stroke="#ffd34d" stroke-opacity=".25" stroke-width="3"/>
+  <g fill="#ffd34d" opacity=".3"><rect x="60" y="880" width="160" height="10"/><rect x="420" y="880" width="160" height="10"/><rect x="780" y="880" width="160" height="10"/><rect x="1140" y="880" width="160" height="10"/></g>
+  <ellipse cx="760" cy="806" rx="680" ry="22" fill="#000" opacity=".85"/>
+  <!-- baú -->
+  <rect x="90" y="250" width="840" height="430" rx="10" fill="url(#bau)" stroke="#4a5a80" stroke-width="3"/>
+  <g stroke="#3a4766" stroke-width="2"><path d="M90 320 H930 M90 610 H930"/></g>
+  <text x="510" y="480" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="88" fill="#ffffff" opacity=".12" letter-spacing="8">ESTRADA</text>
+  <rect x="90" y="680" width="860" height="40" fill="#0d0f15"/>
+  <!-- chassi -->
+  <rect x="900" y="660" width="460" height="46" fill="#0d0f15"/>
+  <!-- cabine -->
+  <path d="M960 690 L960 300 Q960 250 1010 248 L1290 244 Q1340 244 1350 300 L1380 560 Q1386 600 1384 640 L1384 690 Z" fill="url(#cabine)" stroke="#e8ecf2" stroke-width="3"/>
+  <path d="M990 236 Q1000 214 1030 212 L1290 208 Q1320 208 1330 236 Z" fill="#c3c9d4" stroke="#e8ecf2" stroke-width="2"/>
+  <path d="M1220 280 L1314 280 Q1330 282 1334 300 L1356 470 L1220 470 Z" fill="url(#vidro)" stroke="#20293f" stroke-width="4"/>
+  <path d="M1000 290 H1190 V470 H1000 Z" fill="url(#vidro)" stroke="#20293f" stroke-width="4" opacity=".9"/>
+  <path d="M1200 280 V680" stroke="#4b5160" stroke-width="3"/>
+  <rect x="1130" y="520" width="44" height="8" rx="4" fill="#3b3f48"/>
+  <rect x="1360" y="520" width="34" height="120" rx="6" fill="#2a2e38"/>
+  <g stroke="#9aa1ad" stroke-width="3"><path d="M1366 540 H1390 M1366 560 H1390 M1366 580 H1390 M1366 600 H1390 M1366 620 H1390"/></g>
+  <rect x="1366" y="644" width="30" height="40" rx="6" fill="#dfe4ec" opacity=".75"/>
+  <rect x="940" y="300" width="14" height="250" rx="6" fill="#bfc6d2"/>
+  <rect x="1388" y="660" width="40" height="44" rx="6" fill="#cfd5de"/>
+  <rect x="80" y="610" width="14" height="60" rx="3" fill="#4a0b0b"/>
+  <use href="#roda" x="1240" y="730"/><use href="#roda" x="1000" y="730"/><use href="#roda" x="840" y="730"/>
+  <use href="#roda" x="260" y="730"/><use href="#roda" x="420" y="730"/>
+</svg>

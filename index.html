@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Neon Garage — Quadros de carros e motos com LED | Você escolhe onde acende</title>
+  <meta name="description" content="Quadros decorativos de carros, motos e caminhões com LED. Escolha onde acender (faróis, rodas, neon, contorno), a cor e o efeito, veja a prévia na hora e peça pelo WhatsApp. Envio para todo o Brasil.">
+  <meta name="theme-color" content="#06070c">
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/img/icone.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="Neon Garage">
+  <meta property="og:title" content="Quadros de carros e motos com LED — você escolhe onde acende 💡">
+  <meta property="og:description" content="Monte o seu: toque no quadro, acenda faróis, rodas e neon, escolha cores e efeito e veja como fica na parede.">
+  <meta property="og:image" content="assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="assets/img/og.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/vitrine.css">
+</head>
+<body>
+  <a class="sr-only" href="#conteudo">Pular para o conteúdo</a>
+  <header class="topo">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/img/icone.svg" alt="" width="36" height="36"><span data-marca>Neon Garage</span></a>
+      <nav class="menu" aria-label="Principal">
+        <a href="#modelos">Modelos</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#seu-veiculo">Seu veículo</a>
+        <a href="#duvidas">Dúvidas</a>
+      </nav>
+      <a class="btn btn-primario btn-peq" href="montar.html">Monte o seu</a>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <!-- Destaque -->
+    <section class="hero" id="hero">
+      <div class="container hero-grade">
+        <div class="hero-texto">
+          <p class="selo-topo"><span class="pulso" aria-hidden="true"></span> Quadros com LED para quem é apaixonado por máquina</p>
+          <h1><span id="hero-titulo">Seu carro ou moto num quadro que acende.</span> <span class="neon-txt" id="hero-destaque">Você escolhe onde vai o LED.</span></h1>
+          <p class="hero-sub" id="hero-texto">Faróis, rodas, neon embaixo, contorno… Toque no quadro, escolha as cores e o efeito e veja na hora como vai ficar na sua parede.</p>
+          <div class="linha">
+            <a class="btn btn-primario btn-grande" href="montar.html">💡 Montar meu quadro</a>
+            <a class="btn btn-grande btn-fantasma" href="#modelos">Ver modelos</a>
+          </div>
+          <ul class="garantias">
+            <li>🎯 Você escolhe onde acende</li>
+            <li>🛠️ Feito sob encomenda</li>
+            <li>🚚 Envio para todo o Brasil</li>
+          </ul>
+        </div>
+        <div class="hero-vitrine">
+          <div class="parede" id="parede">
+            <div class="interruptor-area">
+              <button type="button" class="interruptor" id="interruptor" aria-pressed="false">
+                <span class="interruptor-tecla" aria-hidden="true"></span>
+                <span class="interruptor-txt">Apagar a luz</span>
+              </button>
+            </div>
+            <div class="hero-quadro" id="hero-quadro"></div>
+            <div class="hero-luz" aria-hidden="true"></div>
+          </div>
+          <div class="hero-toque">
+            <p class="pequeno muted"><b>Experimente:</b> toque para acender ou apagar 👇</p>
+            <div class="chips" id="hero-areas"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Faixa -->
+    <div class="faixa" aria-hidden="true">
+      <div class="faixa-trilho">
+        <span>FARÓIS</span><span>★</span><span>RODAS</span><span>★</span><span>NEON</span><span>★</span><span>CONTORNO</span><span>★</span><span>RGB</span><span>★</span><span>SEQUENCIAL</span><span>★</span>
+        <span>FARÓIS</span><span>★</span><span>RODAS</span><span>★</span><span>NEON</span><span>★</span><span>CONTORNO</span><span>★</span><span>RGB</span><span>★</span><span>SEQUENCIAL</span><span>★</span>
+      </div>
+    </div>
+
+    <!-- Como funciona -->
+    <section class="secao" id="como-funciona">
+      <div class="container">
+        <p class="sobre">Simples assim</p>
+        <h2>Como funciona</h2>
+        <ol class="passos">
+          <li class="passo revelar"><span class="passo-n">1</span><h3>Escolha o modelo</h3><p class="muted">Carro, moto, caminhão… ou mande a foto do <b>seu</b> veículo.</p></li>
+          <li class="passo revelar"><span class="passo-n">2</span><h3>Toque onde quer LED</h3><p class="muted">Acenda faróis, rodas, neon, contorno — ou toque em qualquer ponto do quadro. Escolha cores e efeito.</p></li>
+          <li class="passo revelar"><span class="passo-n">3</span><h3>Peça pelo WhatsApp</h3><p class="muted">Seu pedido chega pronto, com a prévia. A gente confirma, produz e envia para sua casa.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Modelos -->
+    <section class="secao secao-escura" id="modelos">
+      <div class="container">
+        <p class="sobre">Catálogo</p>
+        <div class="titulo-linha">
+          <h2>Escolha seu quadro</h2>
+          <label class="interruptor-mini"><input type="checkbox" id="modelos-escuro" checked> <span>Luz apagada</span></label>
+        </div>
+        <div class="chips filtros" id="filtros" role="group" aria-label="Filtrar por categoria"></div>
+        <div class="grade-quadros" id="grade"></div>
+      </div>
+    </section>
+
+    <!-- Seu veículo -->
+    <section class="secao" id="seu-veiculo">
+      <div class="container seu-grade revelar">
+        <div>
+          <p class="sobre">Exclusivo</p>
+          <h2>O <span class="neon-txt">seu</span> carro ou moto num quadro de LED</h2>
+          <p class="muted" id="seu-texto">Mande a foto do seu veículo, toque onde quer as luzes e pronto: um quadro único, só seu. Ótimo presente também!</p>
+          <ul class="lista-check">
+            <li>Envie a foto pelo celular</li>
+            <li>Marque os pontos de LED com o dedo</li>
+            <li>A gente confere tudo com você antes de produzir</li>
+          </ul>
+          <a class="btn btn-primario btn-grande" href="montar.html?q=foto">📷 Montar com a minha foto</a>
+          <p class="pequeno muted" id="seu-preco"></p>
+        </div>
+        <div class="seu-demo" aria-hidden="true">
+          <div class="seu-celular">
+            <div class="seu-tela"><div id="seu-quadro"></div><span class="dedo">👆</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Depoimentos (só aparece quando há depoimentos reais no catálogo) -->
+    <section class="secao secao-escura" id="depoimentos" hidden>
+      <div class="container">
+        <p class="sobre">Quem já tem</p>
+        <h2>Clientes de garagem acesa</h2>
+        <div class="depoimentos" id="lista-depoimentos"></div>
+      </div>
+    </section>
+
+    <!-- Dúvidas -->
+    <section class="secao" id="duvidas">
+      <div class="container estreito">
+        <p class="sobre">Dúvidas</p>
+        <h2>Perguntas frequentes</h2>
+        <div class="faq" id="faq"></div>
+      </div>
+    </section>
+
+    <!-- Chamada final -->
+    <section class="cta-final">
+      <div class="container centro revelar">
+        <h2>Bora acender sua parede? 🔥</h2>
+        <p class="muted">Monte em 2 minutos e receba o orçamento pelo WhatsApp.</p>
+        <div class="linha" style="justify-content:center">
+          <a class="btn btn-primario btn-grande" href="montar.html">Montar meu quadro</a>
+          <a class="btn btn-wa btn-grande" data-whatsapp href="#">Falar no WhatsApp</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <div class="container">
+      <div>
+        <a class="logo" href="./"><img src="assets/img/icone.svg" alt="" width="36" height="36"><span data-marca>Neon Garage</span></a>
+        <p id="rodape-slogan"></p>
+        <p class="pequeno">© <span data-ano></span> <span data-marca></span>. Todos os direitos reservados.</p>
+      </div>
+      <div>
+        <h3>Site</h3>
+        <a href="montar.html">Monte o seu</a>
+        <a href="#modelos">Modelos</a>
+        <a href="links.html">Nossos links</a>
+        <a href="termos.html">Termos de uso</a>
+        <a href="privacidade.html">Privacidade</a>
+      </div>
+      <div>
+        <h3>Contato</h3>
+        <a data-whatsapp href="#">WhatsApp</a>
+        <a data-instagram href="#">Instagram</a>
+        <a data-tiktok href="#">TikTok</a>
+        <a data-facebook href="#">Facebook</a>
+      </div>
+    </div>
+  </footer>
+
+  <a class="wa-flutuante" data-whatsapp href="#" aria-label="Falar no WhatsApp"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2l-1 1.2c-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.2-.2-.3 0-.5.1-.7l.5-.6.3-.5v-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7s1.2 3.2 1.3 3.4c.2.2 2.3 3.5 5.6 4.9 2.8 1.1 3.3.9 3.9.8.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.2-.3-.3-.6-.4z"/></svg></a>
+
+  <noscript><p class="centro">Ative o JavaScript para ver os quadros acenderem.</p></noscript>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/catalogo.js"></script>
+  <script src="assets/js/rascunho.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/quadro.js"></script>
+  <script src="assets/js/vitrine.js"></script>
+</body>
+</html>

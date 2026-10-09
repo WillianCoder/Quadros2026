@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Neon Garage — Links</title>
+  <meta name="description" content="Quadros de carros e motos com LED. Monte o seu, veja os modelos e fale com a gente no WhatsApp.">
+  <meta name="theme-color" content="#06070c">
+  <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Quadros de carros e motos com LED 💡">
+  <meta property="og:description" content="Você escolhe onde acende. Monte o seu e peça pelo WhatsApp.">
+  <meta property="og:image" content="assets/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/links.css">
+</head>
+<body class="pagina-links">
+  <main class="links">
+    <img class="links-logo" src="assets/img/icone.svg" alt="" width="84" height="84">
+    <h1 data-marca>Neon Garage</h1>
+    <p class="links-bio" id="bio"></p>
+    <a class="links-quadro" href="montar.html" aria-label="Montar meu quadro"><div id="quadro"></div></a>
+    <nav class="links-lista" id="lista" aria-label="Links"></nav>
+    <p class="pequeno muted">© <span data-ano></span> <span data-marca></span></p>
+  </main>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/catalogo.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/quadro.js"></script>
+  <script src="assets/js/links.js"></script>
+</body>
+</html>

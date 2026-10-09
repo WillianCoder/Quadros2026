@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#02040a"/><stop offset=".6" stop-color="#071a2e"/><stop offset="1" stop-color="#0b2a4a"/></linearGradient>
+    <linearGradient id="lataria" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f6fa"/><stop offset=".35" stop-color="#b7bfcc"/><stop offset=".75" stop-color="#4a5262"/><stop offset="1" stop-color="#1a1e27"/></linearGradient>
+    <linearGradient id="vidro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3d4c66"/><stop offset=".5" stop-color="#0e1626"/><stop offset="1" stop-color="#05080f"/></linearGradient>
+    <radialGradient id="aro" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#111"/><stop offset=".55" stop-color="#2a2d34"/><stop offset=".8" stop-color="#e3c27a"/><stop offset=".9" stop-color="#7a6430"/><stop offset="1" stop-color="#151515"/></radialGradient>
+    <g id="roda"><circle r="86" fill="#060607"/><circle r="80" fill="none" stroke="#1c1d22" stroke-width="4"/><circle r="66" fill="url(#aro)"/>
+      <g stroke="#e3c27a" stroke-width="5"><path d="M0 -60 L0 60 M-60 0 L60 0 M-42 -42 L42 42 M-42 42 L42 -42"/></g><circle r="14" fill="#e3c27a"/></g>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <g fill="#1a3a5c" opacity=".7"><rect x="40" y="380" width="120" height="270"/><rect x="190" y="300" width="90" height="350"/><rect x="1240" y="320" width="110" height="330"/><rect x="1380" y="400" width="100" height="250"/></g>
+  <g fill="#59c8ff" opacity=".35"><rect x="60" y="400" width="12" height="10"/><rect x="100" y="440" width="12" height="10"/><rect x="210" y="330" width="12" height="10"/><rect x="250" y="380" width="12" height="10"/><rect x="1260" y="350" width="12" height="10"/><rect x="1300" y="400" width="12" height="10"/><rect x="1400" y="430" width="12" height="10"/></g>
+  <rect y="650" width="1500" height="350" fill="#030810"/>
+  <path d="M0 790 H1500" stroke="#59c8ff" stroke-opacity=".2" stroke-width="3"/>
+  <ellipse cx="760" cy="782" rx="560" ry="18" fill="#000" opacity=".9"/>
+  <path d="M276 716 L268 606 Q266 560 300 470 Q320 420 380 412 L760 404 Q820 404 880 450 L990 540 Q1150 556 1210 580 Q1250 596 1250 640 L1252 690 Q1250 712 1228 716 L1170 716 A92 92 0 0 0 986 716 L548 716 A92 92 0 0 0 364 716 Z" fill="url(#lataria)" stroke="#e8eef8" stroke-width="3"/>
+  <path d="M330 530 Q340 452 390 440 L600 434 L600 540 Z" fill="url(#vidro)" stroke="#1d2433" stroke-width="4"/>
+  <path d="M630 434 L752 432 Q806 434 850 470 L940 540 L630 540 Z" fill="url(#vidro)" stroke="#1d2433" stroke-width="4"/>
+  <path d="M600 434 V700 M300 556 H1220" stroke="#2c3342" stroke-width="3" fill="none"/>
+  <path d="M276 650 H1250" stroke="#0b0f18" stroke-width="16" opacity=".55"/>
+  <rect x="560" y="580" width="40" height="8" rx="4" fill="#2c3342"/>
+  <path d="M1200 590 Q1236 596 1248 620 L1200 618Z" fill="#e8f2ff" opacity=".7"/>
+  <rect x="268" y="560" width="18" height="44" rx="4" fill="#4a0b0b"/>
+  <use href="#roda" x="456" y="720"/><use href="#roda" x="1078" y="720"/>
+</svg>

@@ -1,0 +1,5 @@
+/* Páginas de texto (termos, privacidade, 404). */
+.texto { max-width: 780px; padding: 40px 0 80px; }
+.texto h2 { font-size: 1.25rem; margin-top: 1.6em; }
+.texto li { margin-bottom: 6px; }
+.topo .container { justify-content: space-between; }
