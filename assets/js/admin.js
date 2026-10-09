@@ -348,6 +348,9 @@
         campo('Descrição curta', entrada(q.descricao, { type: 'area', maxlength: 200, placeholder: 'Ex.: Fica top com neon azul embaixo.' }, (v) => { q.descricao = v; })),
         U.el('div', { class: 'grade-2' }, [
           campo('Selo (opcional)', entrada(q.selo, { maxlength: 20, placeholder: 'Novo, Promoção…' }, (v) => { q.selo = v; })),
+          campo('Crédito da foto (se não for sua)', entrada((q.credito || {}).autor, { maxlength: 80, placeholder: 'Nome do fotógrafo' }, (v) => { q.credito = Object.assign({}, q.credito, { autor: v }); })),
+          campo('Licença da foto', entrada((q.credito || {}).licenca, { maxlength: 40, placeholder: 'Domínio público, CC BY 2.0…' }, (v) => { q.credito = Object.assign({}, q.credito, { licenca: v }); })),
+          campo('Link da fonte da foto', entrada((q.credito || {}).fonte, { maxlength: 300, placeholder: 'https://commons.wikimedia.org/…' }, (v) => { q.credito = Object.assign({}, q.credito, { fonte: v }); })),
           U.el('div', {}, [
             U.el('label', { class: 'check' }, [entrada(q.ativo !== false, { type: 'checkbox' }, (v) => { q.ativo = v; }), U.el('span', { text: 'Mostrar no site' })]),
             U.el('label', { class: 'check' }, [entrada(!!q.destaque, { type: 'checkbox' }, (v) => { q.destaque = v; }), U.el('span', { text: '⭐ Destaque' })])

@@ -49,9 +49,20 @@
   });
 
   function salvar() { U.ls.set(GUARDA, cfg); }
+  // Crédito da foto do quadro (exigido pelas licenças CC BY; domínio público mostra por cortesia).
+  function credito() {
+    const c = (quadroAtual() || {}).credito;
+    const box = $('#credito');
+    box.hidden = !(c && c.autor);
+    if (box.hidden) return;
+    const fonte = U.linkSeguro(c.fonte);
+    box.replaceChildren('📷 Foto: ' + c.autor + (c.licenca ? ' · ' + c.licenca : '') + (fonte ? ' · ' : ''),
+      fonte ? U.el('a', { href: fonte, target: '_blank', rel: 'noopener', text: 'fonte' }) : '');
+  }
   function atualizar(tudo) {
     cfg = Q.normalizar(cfg);
     palco.atualizar(cfg, quadroAtual());
+    credito();
     salvar();
     if (tudo) desenharTudo(); else { desenharAreas(); desenharLivre(); desenharEfeito(); desenharAcabamentos(); }
     conta();
