@@ -21,7 +21,7 @@ Ordem de carregamento: `config.js`, `catalogo.js`, `rascunho.js`, `util.js`, `qu
 ## `SITE_CONFIG` (`assets/js/config.js`)
 
 ```json
-{ "marca": "Neon Garage", "slogan": "...", "siteUrl": "", "repo": "WillianCoder/Quadros2026",
+{ "marca": "LED Quadros", "slogan": "...", "siteUrl": "", "repo": "WillianCoder/Quadros2026",
   "whatsapp": "5511912345678", "instagram": "@...", "tiktok": "", "facebook": "", "email": "",
   "atendimento": "Seg a sáb, das 9h às 20h", "firebase": null, "adminEmail": "" }
 ```
@@ -87,7 +87,7 @@ Sempre passe por `Quadro.normalizar(cfg)` (descarta ids inexistentes e limita ta
 | Arquivo | Global | Responsabilidade |
 |---|---|---|
 | `util.js` | `U` | DOM, escape, preço, catálogo, links (WhatsApp, redes), fotos/links seguros, toast, QR Code, bloqueio de iframe. |
-| `quadro.js` | `Quadro` | `obter`, `padrao`, `normalizar`, `preco`, `resumo`, `codificar`/`decodificar`, `desenhar(alvo, opts)`. |
+| `quadro.js` | `Quadro` | `obter`, `padrao`, `normalizar`, `preco`, `resumo`, `codificar`/`decodificar`, `desenhar(alvo, opts)`, `imagem(q, cfg, info)` (canvas 1080×1350 do pedido para mandar no WhatsApp). |
 | `fotos.js` | `Fotos` | `comprimir(file, { lado, qualidade })` → `{ src, proporcao }`. |
 | `store.js` | `Store` | `enviarPedido`, e para o admin: `entrarAdmin`, `entrarGoogle`, `sair`, `admin`, `pedidos`, `foto`, `atualizar`, `excluir`. |
 
@@ -108,3 +108,12 @@ Com `editavel: true`, mostra as áreas apagadas tracejadas e chama `aoTocarArea(
 "Publicar" envia as fotos novas (data URL) para `assets/img/quadros/<id>-<aleatório>.jpg` e grava
 `assets/js/catalogo.js` e `assets/js/config.js` pela API de conteúdo do GitHub (token fine-grained, só *Contents*).
 O push na `main` dispara o `pages.yml`, que roda `scripts/verificar.mjs` e publica.
+
+## Foto do cliente ("Seu veículo no quadro")
+
+- No aparelho do cliente, a foto fica em `localStorage` (`qd:foto`, ou `sessionStorage` se não couber) para não sumir ao trocar de aba.
+- A foto **não** vai no link `?c=` (seria grande demais). Depois do pedido, `montar.js` gera a imagem do quadro montado
+  (`Quadro.imagem`) e oferece "Enviar imagens no WhatsApp" (Web Share com arquivos; no computador, baixa os arquivos).
+- Quem abre um link `?c=` de um pedido com foto começa sem foto e pode carregar a foto recebida: os LEDs são guardados em % da
+  imagem, então caem no lugar certo.
+- Com Firebase, a foto também fica em `pedidos/{id}/foto/0` e aparece no painel.

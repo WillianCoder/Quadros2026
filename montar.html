@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>Monte o seu quadro de LED — Neon Garage</title>
+  <title>Monte o seu quadro de LED — LED Quadros</title>
   <meta name="description" content="Escolha o modelo, toque onde quer LED, escolha cores, efeito, tamanho e moldura. Veja a prévia na hora e peça pelo WhatsApp.">
   <meta name="theme-color" content="#06070c">
   <link rel="icon" href="assets/img/icone.svg" type="image/svg+xml">
@@ -24,7 +24,7 @@
 <body class="pagina-montar">
   <header class="topo">
     <div class="container">
-      <a class="logo" href="./"><img src="assets/img/icone.svg" alt="" width="36" height="36"><span data-marca>Neon Garage</span></a>
+      <a class="logo" href="./"><img src="assets/img/icone.svg" alt="" width="36" height="36"><span data-marca>LED Quadros</span></a>
       <nav class="menu" aria-label="Principal"><a href="./#modelos">Modelos</a><a href="./#duvidas">Dúvidas</a></nav>
       <a class="btn btn-wa btn-peq" data-whatsapp="Olá! Estou montando meu quadro de LED no site e tenho uma dúvida." href="#">💬 Ajuda</a>
     </div>
@@ -54,7 +54,7 @@
         <div class="foto-box" id="foto-box" hidden>
           <label class="btn btn-primario btn-bloco" for="foto-arquivo">📷 <span id="foto-rotulo">Enviar a foto do meu veículo</span></label>
           <input type="file" id="foto-arquivo" accept="image/*" class="sr-only">
-          <p class="ajuda">Dica: foto de lado, inteira, com boa luz. Ela fica só no seu celular até você enviar o pedido.</p>
+          <p class="ajuda" id="foto-ajuda"></p>
         </div>
       </section>
 

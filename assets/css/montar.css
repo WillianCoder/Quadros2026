@@ -65,6 +65,8 @@
 
 /* Janela de pedido enviado */
 .pronto { text-align: center; }
+.passo-pedido { margin: 14px 0 8px; font-weight: 700; text-align: left; }
+.previa-pedido { width: 100%; max-width: 280px; margin: 14px auto 6px; display: block; border-radius: 12px; border: 1px solid var(--borda2); }
 .pronto .codigo { display: inline-block; font-family: var(--fonte-titulo); font-size: 1.6rem; letter-spacing: .12em; padding: 8px 18px; border-radius: 12px; border: 1px dashed var(--ciano); color: var(--ciano); margin: 8px 0 14px; }
 
 @media (max-width: 900px) {

@@ -18,10 +18,20 @@
   U.preencherComuns();
 
   /* ---------- Estado ---------- */
-  let foto = null;   // { src, proporcao } da foto do cliente (só no modo 'foto')
-  try { foto = JSON.parse(sessionStorage.getItem('qd:foto') || 'null'); if (foto && !U.fotoSegura(foto.src)) foto = null; } catch (e) { foto = null; }
-  let cfg;
+  // Foto do cliente (só no modo 'foto'): fica guardada neste aparelho para não sumir ao trocar de aba.
+  // Quem abre um link de montagem (?c=) começa sem foto: ela não viaja no link, chega pelo WhatsApp.
   const doLink = Q.decodificar(U.param('c'));
+  let foto = null;   // { src, proporcao }
+  if (!doLink) {
+    try { foto = JSON.parse(localStorage.getItem('qd:foto') || sessionStorage.getItem('qd:foto') || 'null'); } catch (e) { foto = null; }
+    if (foto && (!U.fotoSegura(foto.src) || !(Number(foto.proporcao) > 0))) foto = null;
+  }
+  function guardarFoto() {
+    const txt = JSON.stringify(foto);
+    try { localStorage.setItem('qd:foto', txt); return; } catch (e) { /* cheio: tenta só nesta aba */ }
+    try { sessionStorage.setItem('qd:foto', txt); } catch (e) { /* foto grande: fica só na memória */ }
+  }
+  let cfg;
   if (doLink) cfg = Q.normalizar(doLink);
   else if (U.param('q')) cfg = Q.normalizar(Q.padrao(Q.obter(U.param('q')) || U.quadros()[0]));
   else cfg = Q.normalizar(U.ls.get(GUARDA, null) || {});
@@ -60,7 +70,10 @@
     const sel = $('#modelos [aria-selected="true"]');
     if (sel) sel.scrollIntoView({ block: 'nearest', inline: 'center' });
     $('#foto-box').hidden = cfg.q !== Q.FOTO;
-    $('#foto-rotulo').textContent = foto ? 'Trocar a foto' : 'Enviar a foto do meu veículo';
+    $('#foto-rotulo').textContent = foto ? 'Trocar a foto' : doLink ? 'Carregar a foto que o cliente mandou' : 'Enviar a foto do meu veículo';
+    $('#foto-ajuda').textContent = doLink && !foto
+      ? 'Este link é de um quadro com a foto do cliente. A foto não vai junto no link: carregue a que chegou no WhatsApp para ver os LEDs no lugar marcado.'
+      : 'Dica: foto de lado, inteira, com boa luz. Ela fica só no seu celular até você enviar o pedido.';
   }
   function trocarModelo(id) {
     if (id === cfg.q) return;
@@ -78,10 +91,10 @@
     U.toast('Preparando a foto…');
     try {
       foto = await window.Fotos.comprimir(f, { lado: 1400, qualidade: 0.8 });
-      try { sessionStorage.setItem('qd:foto', JSON.stringify(foto)); } catch (e) { /* foto grande: fica só na memória */ }
-      cfg.x = []; ferramenta = 'p';
+      guardarFoto();
+      ferramenta = doLink ? '' : 'p';
       atualizar(true);
-      U.toast('Foto pronta! Agora toque nela onde quer o LED 💡', 'ok');
+      U.toast(doLink ? 'Foto carregada: os LEDs aparecem onde o cliente marcou. 💡' : 'Foto pronta! Agora toque nela onde quer o LED 💡', 'ok');
     } catch (e) { U.toast(e.message, 'erro'); }
   });
 
@@ -226,7 +239,7 @@
   }
   function dica() {
     const d = $('#dica');
-    if (cfg.q === Q.FOTO && !foto) d.innerHTML = '📷 <b>Envie a foto</b> do seu veículo para começar';
+    if (cfg.q === Q.FOTO && !foto) d.innerHTML = doLink ? '📷 <b>Carregue a foto</b> que o cliente mandou no WhatsApp' : '📷 <b>Envie a foto</b> do seu veículo para começar';
     else if (ferramenta === 'l' && inicioFaixa) d.innerHTML = '➖ Agora toque onde a <b>faixa termina</b>';
     else if (ferramenta) d.innerHTML = '👆 Toque no quadro para pôr um <b>' + NOMES_FERR[ferramenta].replace(/^\S+ /, '').replace(/ \(.*\)/, '').toLowerCase() + '</b>';
     else d.innerHTML = '👆 Toque nas <b>linhas pontilhadas</b> do quadro para acender';
@@ -274,6 +287,40 @@
     const b = m.querySelector('.btn-wa');
     if (b) b.focus();
   }
+  // Imagem do quadro montado (e a foto original, no modo foto) prontas para compartilhar.
+  // Ficam prontas ANTES do toque no botão: o navegador só deixa compartilhar logo após o toque.
+  async function arquivosDoPedido(id, resumo, total) {
+    const lista = [];
+    const nome = id ? id.toUpperCase() : 'montagem';
+    try {
+      const canvas = await Q.imagem(quadroAtual(), cfg, { marca: (window.SITE_CONFIG || {}).marca, codigo: id ? id.toUpperCase() : '', linhas: resumo, total: U.brl(total) });
+      const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', 0.88));
+      if (blob) lista.push(new File([blob], 'pedido-' + nome + '.jpg', { type: 'image/jpeg' }));
+    } catch (e) { console.warn(e); }
+    if (cfg.q === Q.FOTO && foto) {
+      try {
+        // data URL → arquivo sem fetch (o CSP não libera fetch de data:)
+        const bin = atob(foto.src.split(',')[1]);
+        lista.push(new File([Uint8Array.from(bin, (ch) => ch.charCodeAt(0))], 'foto-veiculo-' + nome + '.jpg', { type: 'image/jpeg' }));
+      } catch (e) { console.warn(e); }
+    }
+    return lista;
+  }
+  function botaoArquivos(arquivos, id) {
+    const podeCompartilhar = !!(navigator.canShare && navigator.canShare({ files: arquivos }));
+    return U.el('button', {
+      type: 'button', class: 'btn btn-primario btn-grande btn-bloco',
+      text: podeCompartilhar ? '📷 Enviar imagens no WhatsApp' : '⬇️ Baixar imagens para anexar',
+      onclick: async () => {
+        if (podeCompartilhar) {
+          try { await navigator.share({ files: arquivos, title: 'Pedido ' + (id ? '#' + id.toUpperCase() : ''), text: 'Imagens do meu pedido ' + (id ? '#' + id.toUpperCase() : '') }); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        arquivos.forEach((f, i) => setTimeout(() => U.baixar(f.name, f), i * 400));
+        U.toast('Imagens baixadas! Anexe na conversa do WhatsApp (clipe 📎).', 'ok');
+      }
+    });
+  }
   $('#c-nome').value = U.ls.get('qd:cliente', {}).nome || '';
   $('#c-whats').value = U.ls.get('qd:cliente', {}).whatsapp || '';
   $('#c-cidade').value = U.ls.get('qd:cliente', {}).cidade || '';
@@ -298,13 +345,18 @@
       .concat(id ? ['🧾 Pedido #' + id.toUpperCase()] : [])
       .concat(resumo)
       .concat(['💰 Total estimado: ' + U.brl(preco.total), '', '👤 ' + cliente.nome + (cliente.cidade ? ' — ' + cliente.cidade : ''), '🔗 Minha montagem: ' + linkMontagem()])
-      .concat(cfg.q === Q.FOTO ? ['', '📷 Vou mandar a foto do meu veículo aqui na conversa.'] : [])
+      .concat(cfg.q === Q.FOTO ? ['', '📷 Vou mandar aqui na conversa a foto do meu veículo e a imagem do quadro montado.'] : ['', '🖼️ Vou mandar a imagem do quadro montado aqui na conversa.'])
       .join('\n');
+    const arquivos = await arquivosDoPedido(id, resumo, preco.total);
     janela([
-      U.el('p', { text: id ? 'Código do seu pedido:' : 'Falta só um passo:' }),
+      U.el('p', { text: id ? 'Código do seu pedido:' : 'Falta pouco:' }),
       id ? U.el('div', { class: 'codigo', text: '#' + id.toUpperCase() }) : null,
-      U.el('p', { class: 'muted', text: 'Toque no botão para mandar o resumo no nosso WhatsApp. A gente confirma o frete, a forma de pagamento e começa a produzir. 🚀' }),
-      U.el('a', { class: 'btn btn-wa btn-grande btn-bloco', href: U.wa(msg), target: '_blank', rel: 'noopener', text: '💬 Enviar no WhatsApp' })
+      U.el('p', { class: 'passo-pedido', text: '1️⃣ Mande o resumo no nosso WhatsApp:' }),
+      U.el('a', { class: 'btn btn-wa btn-grande btn-bloco', href: U.wa(msg), target: '_blank', rel: 'noopener', text: '💬 Enviar pedido no WhatsApp' }),
+      arquivos.length ? U.el('p', { class: 'passo-pedido', text: '2️⃣ Depois mande ' + (cfg.q === Q.FOTO ? 'a foto do veículo e a imagem do quadro' : 'a imagem do quadro montado') + ' na mesma conversa:' }) : null,
+      arquivos.length ? botaoArquivos(arquivos, id) : null,
+      arquivos.length ? U.el('img', { class: 'previa-pedido', src: URL.createObjectURL(arquivos[0]), alt: 'Imagem do quadro montado' }) : null,
+      U.el('p', { class: 'muted pequeno', text: 'A gente confirma o frete e a forma de pagamento e começa a produzir. 🚀' })
     ]);
   });
 

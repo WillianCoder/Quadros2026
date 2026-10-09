@@ -425,7 +425,7 @@
   let filtroStatus = '';
   async function pedidos(p) {
     p.append(U.el('h1', { text: '🧾 Pedidos' }));
-    if (Store.modo === 'local') p.append(U.el('p', { class: 'aviso', text: '🧪 Modo de teste: sem o Firebase, só aparecem aqui os pedidos feitos neste navegador. Os pedidos dos clientes chegam completos no seu WhatsApp (com o link da montagem). Para guardar todos online, configure o Firebase na aba Configurações.' }));
+    if (Store.modo === 'local') p.append(U.el('p', { class: 'aviso', text: '🧪 Modo de teste: sem o Firebase, só aparecem aqui os pedidos feitos neste navegador. Os pedidos dos clientes chegam no seu WhatsApp com o resumo, o link da montagem, a imagem do quadro montado e (no "Seu veículo") a foto do cliente. Para consultar a foto pelo link, abra o link e toque em "Carregar a foto que o cliente mandou". Para guardar tudo aqui no painel, inclusive as fotos, configure o Firebase na aba Configurações.' }));
     else {
       try { await Store.iniciar(); } catch (e) { p.append(U.el('p', { class: 'aviso', text: 'Não consegui conectar ao Firebase. Confira a configuração.' })); return; }
       if (!Store.admin()) { p.append(login()); return; }

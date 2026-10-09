@@ -1,4 +1,4 @@
-# Neon Garage — instruções para o Claude
+# LED Quadros — instruções para o Claude
 
 Site de quadros de carros, motos e caminhões com LED. O diferencial: o cliente escolhe onde vai o LED.
 Dono: Willian (leigo em programação). Responda e escreva tudo em **português do Brasil**.

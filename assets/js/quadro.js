@@ -17,6 +17,7 @@
  *   Quadro.codificar(cfg) / Quadro.decodificar(texto)   → texto para o link ?c=
  *   Quadro.desenhar(alvo, { quadro, config, escuro, ligado, editavel, aoTocar(x, y), aoTocarArea(id), legenda })
  *       → { el, atualizar(cfg, quadro?), escuro(bool), ligado(bool), marcas([[x,y]]) }
+ *   await Quadro.imagem(quadro, cfg, { marca, codigo, linhas, total }) → <canvas> 1080×1350 do pedido
  */
 (function () {
   'use strict';
@@ -281,5 +282,107 @@
     return api;
   }
 
-  window.Quadro = { FOTO, obter, padrao, normalizar, preco, resumo, codificar, decodificar, desenhar };
+  /* ======================= Imagem do pedido (para mandar no WhatsApp) ======================= */
+  function carregarImagem(src) {
+    return new Promise((ok, falha) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => falha(new Error('Não consegui abrir a imagem.'));
+      i.src = src;
+    });
+  }
+  // Quebra o texto em linhas que cabem na largura.
+  function linhasQueCabem(ctx, texto, largura) {
+    const saida = [];
+    String(texto).split('\n').forEach((par) => {
+      let atual = '';
+      par.split(' ').forEach((p) => {
+        const teste = atual ? atual + ' ' + p : p;
+        if (ctx.measureText(teste).width > largura && atual) { saida.push(atual); atual = p; } else atual = teste;
+      });
+      saida.push(atual);
+    });
+    return saida;
+  }
+  // Desenha o quadro montado (com os LEDs acesos) + código + resumo num <canvas> 1080×1350.
+  // info: { marca, codigo, linhas: [texto], total: 'R$ 0' }
+  async function imagem(q, cfg, info) {
+    const o = info || {};
+    const LW = 1080, LH = 1350;
+    const c = document.createElement('canvas');
+    c.width = LW; c.height = LH;
+    const ctx = c.getContext('2d');
+    const fundo = ctx.createRadialGradient(LW / 2, 380, 50, LW / 2, 380, 900);
+    fundo.addColorStop(0, '#141826'); fundo.addColorStop(1, '#05060a');
+    ctx.fillStyle = fundo; ctx.fillRect(0, 0, LW, LH);
+
+    // Área do quadro
+    const prop = num(q.proporcao || 1.5, 0.4, 3);
+    let fw = 920, borda = Math.round(fw * 0.032);
+    let aw = fw - borda * 2, ah = aw / prop;
+    if (ah > 680) { ah = 680; aw = ah * prop; borda = Math.round(aw * 0.034); fw = aw + borda * 2; }
+    const fx = (LW - fw) / 2, fy = 70, fh = ah + borda * 2;
+    const ax = fx + borda, ay = fy + borda;
+    const mold = (U.opcoes().molduras || []).find((m) => m.id === cfg.m);
+    if (cfg.fd) {
+      ctx.save(); ctx.shadowColor = U.corHex(cfg.fd); ctx.shadowBlur = 90; ctx.fillStyle = U.corHex(cfg.fd);
+      ctx.globalAlpha = 0.7; ctx.fillRect(fx + 20, fy + 20, fw - 40, fh - 40); ctx.restore();
+    }
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 18;
+    ctx.fillStyle = U.corValida(mold ? mold.cor : '#121214'); ctx.fillRect(fx, fy, fw, fh); ctx.restore();
+
+    // Arte (cobre a área, como no site) levemente escurecida, e os LEDs por cima (modo "tela")
+    try {
+      const img = await carregarImagem(U.fotoSegura(q.imagem) || 'assets/img/sua-foto.svg');
+      const iw = img.naturalWidth || 1500, ih = img.naturalHeight || 1000;
+      const esc = Math.max(aw / iw, ah / ih);
+      ctx.save(); ctx.beginPath(); ctx.rect(ax, ay, aw, ah); ctx.clip();
+      ctx.drawImage(img, ax + (aw - iw * esc) / 2, ay + (ah - ih * esc) / 2, iw * esc, ih * esc);
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(ax, ay, aw, ah);
+      ctx.restore();
+    } catch (e) { ctx.fillStyle = '#000'; ctx.fillRect(ax, ay, aw, ah); }
+    const caixa = document.createElement('div');
+    caixa.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + Math.round(aw) + 'px';
+    document.body.append(caixa);
+    try {
+      desenhar(caixa, { quadro: q, config: Object.assign({}, cfg, { e: 'fixo', ct: '', fd: '' }) });
+      const s = caixa.querySelector('.qd-leds').cloneNode(true);
+      s.setAttribute('xmlns', NS);
+      s.setAttribute('width', Math.round(aw)); s.setAttribute('height', Math.round(ah));
+      const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(s)], { type: 'image/svg+xml' }));
+      try {
+        const luzes = await carregarImagem(url);
+        ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.drawImage(luzes, ax, ay, aw, ah); ctx.restore();
+      } finally { URL.revokeObjectURL(url); }
+    } catch (e) { /* sem as luzes: segue com a arte */ }
+    caixa.remove();
+    if (cfg.ct) {
+      ctx.save(); const h = U.corHex(cfg.ct); ctx.strokeStyle = h; ctx.lineWidth = 6; ctx.shadowColor = h; ctx.shadowBlur = 24;
+      ctx.strokeRect(ax + 3, ay + 3, aw - 6, ah - 6); ctx.restore();
+    }
+
+    // Textos
+    let y = fy + fh + 70;
+    const fonte = (peso, tam) => peso + ' ' + tam + "px 'Inter', 'Segoe UI', system-ui, sans-serif";
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#22e6ff'; ctx.font = fonte(800, 28);
+    ctx.fillText(String(o.marca || '').toUpperCase(), 70, y);
+    if (o.codigo) { ctx.fillStyle = '#ffffff'; ctx.font = fonte(800, 52); ctx.fillText('Pedido #' + o.codigo, 70, y + 62); y += 62; }
+    y += 50;
+    ctx.fillStyle = '#c9cfe6'; ctx.font = fonte(500, 28);
+    const linhas = [];
+    (o.linhas || []).forEach((l) => linhasQueCabem(ctx, l.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim(), LW - 140).forEach((x) => linhas.push(x)));
+    const espaco = o.total ? 110 : 40;
+    for (const l of linhas) {
+      if (y + 38 > LH - espaco) { ctx.fillText('…', 70, y); y += 38; break; }
+      ctx.fillText(l, 70, y); y += 38;
+    }
+    if (o.total) {
+      ctx.fillStyle = '#ffffff'; ctx.font = fonte(800, 44);
+      ctx.fillText('Total estimado: ' + o.total, 70, LH - 60);
+    }
+    return c;
+  }
+
+  window.Quadro = { FOTO, obter, padrao, normalizar, preco, resumo, codificar, decodificar, desenhar, imagem };
 })();
