@@ -22,6 +22,11 @@ window.CATALOGO = {
       "emoji": "🚘"
     },
     {
+      "id": "customizados",
+      "nome": "Hot Rods",
+      "emoji": "🔥"
+    },
+    {
       "id": "rebaixados",
       "nome": "Rebaixados",
       "emoji": "🔊"
@@ -2090,6 +2095,423 @@ window.CATALOGO = {
           ],
           "preco": 20,
           "cor": "laranja",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-hotrod-chamas",
+      "nome": "Hot Rod Flames (foto real)",
+      "categoria": "customizados",
+      "ativo": true,
+      "destaque": true,
+      "selo": "Foto real",
+      "descricao": "Hot rod preto com pintura de chamas, de frente. Faróis com anel de LED e neon embaixo deixam ele em chamas de verdade.",
+      "imagem": "assets/img/quadros/foto-hotrod-chamas.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Supermac1961 (Flickr)",
+        "licenca": "CC BY 2.0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Hot_Rod_and_Custom_Car_meet,_Monterey_-_Flickr_-_Supermac1961_(6).jpg"
+      },
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              20.5,
+              59.7
+            ],
+            [
+              86.5,
+              62.1
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "aneis",
+          "nome": "Anel nos faróis (olho de anjo)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              20.5,
+              59.7,
+              3
+            ],
+            [
+              86.5,
+              62.1,
+              3
+            ]
+          ],
+          "preco": 25,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "piscas",
+          "nome": "Piscas",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              32.9,
+              69.3
+            ],
+            [
+              73.8,
+              70.7
+            ]
+          ],
+          "preco": 0,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "grade",
+          "nome": "Contorno da grade",
+          "tipo": "linha",
+          "pontos": [
+            [
+              26.7,
+              66.4
+            ],
+            [
+              80.5,
+              67.1
+            ],
+            [
+              75.2,
+              82.1
+            ],
+            [
+              32.4,
+              82.9
+            ],
+            [
+              26.7,
+              66.4
+            ]
+          ],
+          "preco": 25,
+          "cor": "vermelho",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              17,
+              88.6
+            ],
+            [
+              89,
+              88.6
+            ]
+          ],
+          "preco": 30,
+          "cor": "laranja",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-custom-rebaixado",
+      "nome": "Custom Rebaixado 50s (foto real)",
+      "categoria": "customizados",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Clássico dos anos 50 rebaixado, branco com chamas verdes. Neon embaixo e friso aceso realçam o rebaixamento.",
+      "imagem": "assets/img/quadros/foto-custom-rebaixado.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Supermac1961 (Flickr)",
+        "licenca": "CC BY 2.0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Hot_Rod_and_Custom_Car_meet,_Monterey_-_Flickr_-_Supermac1961.jpg"
+      },
+      "leds": [
+        {
+          "id": "farol",
+          "nome": "Farol",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              9.5,
+              67.5
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanterna",
+          "nome": "Lanterna",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              96.7,
+              72.1
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo do carro",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.4,
+              85.7
+            ],
+            [
+              95.2,
+              77.9
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": true
+        },
+        {
+          "id": "friso",
+          "nome": "Friso das chamas",
+          "tipo": "linha",
+          "pontos": [
+            [
+              31.4,
+              72.1
+            ],
+            [
+              72.4,
+              74.3
+            ],
+            [
+              75.2,
+              68.6
+            ],
+            [
+              96.2,
+              67.1
+            ]
+          ],
+          "preco": 20,
+          "cor": "verde",
+          "padrao": false
+        },
+        {
+          "id": "teto",
+          "nome": "Linha do teto",
+          "tipo": "linha",
+          "pontos": [
+            [
+              41.9,
+              42.9
+            ],
+            [
+              57.1,
+              40.4
+            ],
+            [
+              72.4,
+              42.1
+            ],
+            [
+              84.8,
+              48.6
+            ]
+          ],
+          "preco": 20,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              25.2,
+              81.1,
+              5.6
+            ],
+            [
+              84,
+              75.7,
+              4.6
+            ]
+          ],
+          "preco": 25,
+          "cor": "verde",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-chevy-chamas",
+      "nome": "Chevy 56 Flames (foto real)",
+      "categoria": "customizados",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Clássico de 1956 roxo e amarelo com chamas. Fica um espetáculo com anel nos faróis e para-choque aceso.",
+      "imagem": "assets/img/quadros/foto-chevy-chamas.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Supermac1961 (Flickr)",
+        "licenca": "CC BY 2.0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Hot_Rod_and_Custom_Car_meet,_Monterey_-_Flickr_-_Supermac1961_(5).jpg"
+      },
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              12.4,
+              59.3
+            ],
+            [
+              46.7,
+              60
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "aneis",
+          "nome": "Anel nos faróis (olho de anjo)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              12.4,
+              59.3,
+              2.6
+            ],
+            [
+              46.7,
+              60,
+              2.8
+            ]
+          ],
+          "preco": 25,
+          "cor": "rosa",
+          "padrao": false
+        },
+        {
+          "id": "piscas",
+          "nome": "Piscas",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              13.3,
+              69.7
+            ],
+            [
+              47.6,
+              72.4
+            ]
+          ],
+          "preco": 0,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "parachoque",
+          "nome": "Para-choque cromado",
+          "tipo": "linha",
+          "pontos": [
+            [
+              9.5,
+              77.9
+            ],
+            [
+              56.2,
+              80
+            ]
+          ],
+          "preco": 20,
+          "cor": "roxo",
+          "padrao": true
+        },
+        {
+          "id": "friso",
+          "nome": "Friso lateral",
+          "tipo": "linha",
+          "pontos": [
+            [
+              53.8,
+              62.1
+            ],
+            [
+              77.1,
+              55.7
+            ],
+            [
+              90,
+              55
+            ]
+          ],
+          "preco": 20,
+          "cor": "amarelo",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              60,
+              77.1,
+              5
+            ],
+            [
+              85.2,
+              64.3,
+              3.2
+            ]
+          ],
+          "preco": 25,
+          "cor": "roxo",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              10,
+              85.5
+            ],
+            [
+              56.5,
+              87
+            ],
+            [
+              88,
+              71
+            ]
+          ],
+          "preco": 30,
+          "cor": "roxo",
           "padrao": false
         }
       ]
