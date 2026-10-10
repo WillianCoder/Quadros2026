@@ -22,6 +22,11 @@ window.CATALOGO = {
       "emoji": "🚘"
     },
     {
+      "id": "customizados",
+      "nome": "Hot Rods",
+      "emoji": "🔥"
+    },
+    {
       "id": "rebaixados",
       "nome": "Rebaixados",
       "emoji": "🔊"
@@ -35,6 +40,11 @@ window.CATALOGO = {
       "id": "pesados",
       "nome": "Caminhões",
       "emoji": "🚛"
+    },
+    {
+      "id": "militares",
+      "nome": "Militares",
+      "emoji": "🪖"
     }
   ],
   "quadros": [
@@ -156,6 +166,148 @@ window.CATALOGO = {
             [
               62,
               52.2
+            ]
+          ],
+          "preco": 20,
+          "cor": "rosa",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "turbo-jdm",
+      "nome": "Turbo JDM",
+      "categoria": "esportivos",
+      "ativo": true,
+      "destaque": true,
+      "selo": "Novo",
+      "descricao": "Esportivo turbinado com aerofólio e chama no escapamento. Fica insano com neon rosa embaixo.",
+      "imagem": "assets/img/quadros/turbo-jdm.svg",
+      "proporcao": 1.5,
+      "preco": 199,
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "linha",
+          "pontos": [
+            [
+              82.93,
+              59.2
+            ],
+            [
+              86.53,
+              61.2
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-frio",
+          "padrao": true
+        },
+        {
+          "id": "lanternas",
+          "nome": "Lanternas",
+          "tipo": "linha",
+          "pontos": [
+            [
+              13.93,
+              58.2
+            ],
+            [
+              13.93,
+              61.2
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "chama",
+          "nome": "Chama do escapamento (turbo)",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              9.2,
+              68.7
+            ],
+            [
+              7.87,
+              68.7
+            ]
+          ],
+          "preco": 20,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo do carro",
+          "tipo": "linha",
+          "pontos": [
+            [
+              22.67,
+              77.2
+            ],
+            [
+              79.33,
+              77.2
+            ]
+          ],
+          "preco": 30,
+          "cor": "rosa",
+          "padrao": true
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              29.73,
+              71.2,
+              4.8
+            ],
+            [
+              72.4,
+              71.2,
+              4.8
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "aerofolio",
+          "nome": "Aerofólio",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.27,
+              47.2
+            ],
+            [
+              24.13,
+              47.2
+            ]
+          ],
+          "preco": 15,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "faixa",
+          "nome": "Faixa lateral",
+          "tipo": "linha",
+          "pontos": [
+            [
+              14,
+              64
+            ],
+            [
+              86.8,
+              64
             ]
           ],
           "preco": 20,
@@ -896,6 +1048,1470 @@ window.CATALOGO = {
           ],
           "preco": 25,
           "cor": "azul-gelo",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "tanque-militar",
+      "nome": "Tanque de Guerra",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Novo",
+      "descricao": "Blindado de esteira no pôr do sol do deserto. LED no canhão, na torre e embaixo da esteira.",
+      "imagem": "assets/img/quadros/tanque-militar.svg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "leds": [
+        {
+          "id": "farol",
+          "nome": "Farol",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              84,
+              61.2
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanterna",
+          "nome": "Lanterna traseira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              14.07,
+              60.2
+            ],
+            [
+              14.07,
+              62.8
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "canhao",
+          "nome": "Linha do canhão",
+          "tipo": "linha",
+          "pontos": [
+            [
+              66,
+              47
+            ],
+            [
+              95.33,
+              47
+            ]
+          ],
+          "preco": 20,
+          "cor": "verde",
+          "padrao": true
+        },
+        {
+          "id": "disparo",
+          "nome": "Clarão na boca do canhão",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              96.4,
+              47
+            ]
+          ],
+          "preco": 15,
+          "cor": "laranja",
+          "padrao": false
+        },
+        {
+          "id": "torre",
+          "nome": "Contorno da torre",
+          "tipo": "linha",
+          "pontos": [
+            [
+              31.33,
+              55.2
+            ],
+            [
+              34.67,
+              44.6
+            ],
+            [
+              36,
+              42.2
+            ],
+            [
+              39.33,
+              41.8
+            ],
+            [
+              60,
+              41.4
+            ],
+            [
+              64,
+              41.6
+            ],
+            [
+              66,
+              45
+            ],
+            [
+              70,
+              54.8
+            ]
+          ],
+          "preco": 25,
+          "cor": "verde",
+          "padrao": false
+        },
+        {
+          "id": "esteira",
+          "nome": "Neon embaixo da esteira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              20,
+              80
+            ],
+            [
+              79.33,
+              80
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": true
+        }
+      ]
+    },
+    {
+      "id": "jipe-militar",
+      "nome": "Jipe Militar 4x4",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "",
+      "descricao": "Utilitário militar no deserto à noite, com pneus off-road e giroflex no teto.",
+      "imagem": "assets/img/quadros/jipe-militar.svg",
+      "proporcao": 1.5,
+      "preco": 199,
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "linha",
+          "pontos": [
+            [
+              87.4,
+              56.2
+            ],
+            [
+              87.4,
+              59.8
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanternas",
+          "nome": "Lanternas",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.8,
+              56.2
+            ],
+            [
+              12.8,
+              59.4
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "teto",
+          "nome": "Luzes do teto",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              58.33,
+              36.4
+            ],
+            [
+              61,
+              36.4
+            ]
+          ],
+          "preco": 15,
+          "cor": "amarelo",
+          "padrao": true
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              29.33,
+              71.6,
+              4.4
+            ],
+            [
+              70.8,
+              71.6,
+              4.4
+            ]
+          ],
+          "preco": 25,
+          "cor": "laranja",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo do jipe",
+          "tipo": "linha",
+          "pontos": [
+            [
+              22,
+              80
+            ],
+            [
+              79.33,
+              80
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "helicoptero-militar",
+      "nome": "Helicóptero Militar",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "",
+      "descricao": "Helicóptero de combate sob a lua. O rotor aceso é o que mais chama atenção.",
+      "imagem": "assets/img/quadros/helicoptero-militar.svg",
+      "proporcao": 1.5,
+      "preco": 209,
+      "leds": [
+        {
+          "id": "rotor",
+          "nome": "Hélice principal (rotor)",
+          "tipo": "linha",
+          "pontos": [
+            [
+              10,
+              30
+            ],
+            [
+              52.67,
+              28.8
+            ],
+            [
+              96,
+              30
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": true
+        },
+        {
+          "id": "cauda",
+          "nome": "Hélice da cauda",
+          "tipo": "anel",
+          "pontos": [
+            [
+              9.33,
+              38,
+              3.87
+            ]
+          ],
+          "preco": 15,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "holofote",
+          "nome": "Holofote",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              81.67,
+              58
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-frio",
+          "padrao": true
+        },
+        {
+          "id": "navegacao",
+          "nome": "Luzes de navegação",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              34.67,
+              50
+            ],
+            [
+              11,
+              44
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              40,
+              72.2
+            ],
+            [
+              80,
+              72.2
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-abrams-disparo",
+      "nome": "Abrams em Disparo (foto real)",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": true,
+      "selo": "Foto real",
+      "descricao": "Tanque M1A1 Abrams no momento do disparo. Acenda o canhão, a torre e as rodas da esteira.",
+      "imagem": "assets/img/quadros/foto-abrams-disparo.jpg",
+      "proporcao": 1.5,
+      "preco": 229,
+      "credito": {
+        "autor": "Alex C. Sauceda, U.S. Marine Corps",
+        "licenca": "Domínio público",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Firing_M1A1_tank_in_Djibouti.jpg"
+      },
+      "leds": [
+        {
+          "id": "canhao",
+          "nome": "Linha do canhão",
+          "tipo": "linha",
+          "pontos": [
+            [
+              52,
+              43.3
+            ],
+            [
+              72.5,
+              46.4
+            ]
+          ],
+          "preco": 20,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "disparo",
+          "nome": "Clarão do disparo",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              73.5,
+              46.8
+            ]
+          ],
+          "preco": 15,
+          "cor": "amarelo",
+          "padrao": true
+        },
+        {
+          "id": "torre",
+          "nome": "Contorno da torre",
+          "tipo": "linha",
+          "pontos": [
+            [
+              5.5,
+              34.5
+            ],
+            [
+              42,
+              34.5
+            ],
+            [
+              45.5,
+              35.5
+            ],
+            [
+              52,
+              42
+            ]
+          ],
+          "preco": 25,
+          "cor": "verde",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas da esteira",
+          "tipo": "anel",
+          "pontos": [
+            [
+              20.5,
+              63.6,
+              2.3
+            ],
+            [
+              27.1,
+              63.6,
+              2.3
+            ],
+            [
+              33.3,
+              63.6,
+              2.3
+            ],
+            [
+              39,
+              63.6,
+              2.3
+            ],
+            [
+              44.3,
+              63.6,
+              2.3
+            ],
+            [
+              49,
+              63.6,
+              2.3
+            ],
+            [
+              53.8,
+              63.6,
+              2.3
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "esteira",
+          "nome": "Neon embaixo da esteira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              7.6,
+              69.5
+            ],
+            [
+              57,
+              64.6
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": true
+        }
+      ]
+    },
+    {
+      "id": "foto-abrams-noite",
+      "nome": "Abrams na Neve à Noite (foto real)",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Tanque Abrams na neve, no fim da tarde. Lanternas, antenas e esteira acesas ficam incríveis no azul.",
+      "imagem": "assets/img/quadros/foto-abrams-noite.jpg",
+      "proporcao": 1.5,
+      "preco": 229,
+      "credito": {
+        "autor": "Sgt. Randis Monroe, U.S. Army",
+        "licenca": "Domínio público",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Abrams_Tank_Ready_to_Engage_(6521429).jpg"
+      },
+      "leds": [
+        {
+          "id": "lanternas",
+          "nome": "Lanternas traseiras",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              1.5,
+              54.6
+            ],
+            [
+              31.7,
+              55.3
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "antenas",
+          "nome": "Ponta das antenas",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              23.6,
+              5.8
+            ],
+            [
+              44.1,
+              4.4
+            ]
+          ],
+          "preco": 15,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "canhao",
+          "nome": "Linha do canhão",
+          "tipo": "linha",
+          "pontos": [
+            [
+              78,
+              51.6
+            ],
+            [
+              92.8,
+              54.3
+            ]
+          ],
+          "preco": 20,
+          "cor": "azul-gelo",
+          "padrao": true
+        },
+        {
+          "id": "torre",
+          "nome": "Contorno da torre",
+          "tipo": "linha",
+          "pontos": [
+            [
+              11.4,
+              41.4
+            ],
+            [
+              45.7,
+              40.8
+            ],
+            [
+              69.5,
+              41.4
+            ],
+            [
+              72.4,
+              45.7
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas da esteira",
+          "tipo": "anel",
+          "pontos": [
+            [
+              44.8,
+              80,
+              2.7
+            ],
+            [
+              51.4,
+              80,
+              2.7
+            ],
+            [
+              57.1,
+              80,
+              2.7
+            ],
+            [
+              62.9,
+              80,
+              2.7
+            ],
+            [
+              68.6,
+              80,
+              2.7
+            ],
+            [
+              74.3,
+              80,
+              2.7
+            ],
+            [
+              80,
+              80,
+              2.7
+            ]
+          ],
+          "preco": 25,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "esteira",
+          "nome": "Neon embaixo da esteira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              6,
+              84.5
+            ],
+            [
+              89,
+              83.5
+            ]
+          ],
+          "preco": 30,
+          "cor": "azul",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-abrams-fogo",
+      "nome": "Abrams Iluminado (foto real)",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Abrams iluminado por sinalizadores numa noite de neve. Visual quente, perfeito com LED laranja e vermelho.",
+      "imagem": "assets/img/quadros/foto-abrams-fogo.jpg",
+      "proporcao": 1.5,
+      "preco": 229,
+      "credito": {
+        "autor": "Sgt. Randis Monroe, U.S. Army",
+        "licenca": "Domínio público",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Abrams_Tank_Ready_to_Engage_(6521431).jpg"
+      },
+      "leds": [
+        {
+          "id": "canhao",
+          "nome": "Linha do canhão",
+          "tipo": "linha",
+          "pontos": [
+            [
+              54.3,
+              59.3
+            ],
+            [
+              76.8,
+              59.3
+            ]
+          ],
+          "preco": 20,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "disparo",
+          "nome": "Clarão na boca do canhão",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              77.5,
+              59.3
+            ]
+          ],
+          "preco": 15,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "antenas",
+          "nome": "Ponta das antenas",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              8.4,
+              25
+            ],
+            [
+              20.6,
+              24.4
+            ]
+          ],
+          "preco": 15,
+          "cor": "vermelho",
+          "padrao": false
+        },
+        {
+          "id": "farol",
+          "nome": "Farol dianteiro",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              70.8,
+              71.4
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas da esteira",
+          "tipo": "anel",
+          "pontos": [
+            [
+              16.7,
+              83.6,
+              2.6
+            ],
+            [
+              23.3,
+              83.6,
+              2.6
+            ],
+            [
+              30,
+              83.6,
+              2.6
+            ],
+            [
+              36.2,
+              83.6,
+              2.6
+            ],
+            [
+              42.4,
+              83.6,
+              2.6
+            ],
+            [
+              48.6,
+              83.6,
+              2.6
+            ],
+            [
+              53.8,
+              83.6,
+              2.6
+            ]
+          ],
+          "preco": 25,
+          "cor": "laranja",
+          "padrao": false
+        },
+        {
+          "id": "esteira",
+          "nome": "Neon embaixo da esteira",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.4,
+              88
+            ],
+            [
+              70.5,
+              80.5
+            ]
+          ],
+          "preco": 30,
+          "cor": "vermelho",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-humvee",
+      "nome": "Humvee Militar (foto real)",
+      "categoria": "militares",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Humvee das forças especiais com helicópteros ao fundo. LED no quebra-mato, faróis, teto e rodas.",
+      "imagem": "assets/img/quadros/foto-humvee.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Staff Sgt. Elizabeth Pena",
+        "licenca": "Domínio público",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Romanian_Special_Forces_Humvee.jpg"
+      },
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              79.8,
+              61.4
+            ],
+            [
+              84.8,
+              61
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-frio",
+          "padrao": true
+        },
+        {
+          "id": "setas",
+          "nome": "Luz de seta",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              72.1,
+              61
+            ]
+          ],
+          "preco": 0,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "quebramato",
+          "nome": "Quebra-mato (para-choque)",
+          "tipo": "linha",
+          "pontos": [
+            [
+              77.1,
+              55
+            ],
+            [
+              91.4,
+              54.6
+            ],
+            [
+              91.7,
+              60
+            ]
+          ],
+          "preco": 20,
+          "cor": "azul-gelo",
+          "padrao": true
+        },
+        {
+          "id": "teto",
+          "nome": "Linha do teto",
+          "tipo": "linha",
+          "pontos": [
+            [
+              17,
+              38.6
+            ],
+            [
+              64,
+              37.9
+            ]
+          ],
+          "preco": 20,
+          "cor": "amarelo",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos pneus)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              11,
+              75.7,
+              7.4
+            ],
+            [
+              65.7,
+              77.1,
+              7.4
+            ]
+          ],
+          "preco": 25,
+          "cor": "verde",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12,
+              86
+            ],
+            [
+              88,
+              86
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-chopper-vermelha",
+      "nome": "Chopper Flames (foto real)",
+      "categoria": "motos",
+      "ativo": true,
+      "destaque": true,
+      "selo": "Foto real",
+      "descricao": "Chopper vermelha com pintura de chamas e muito cromado. Farol, rodas e neon embaixo do motor.",
+      "imagem": "assets/img/quadros/foto-chopper-vermelha.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "paulbr75 (Pixabay)",
+        "licenca": "CC0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Motorcycle-1698615_1920.jpg"
+      },
+      "leds": [
+        {
+          "id": "farol",
+          "nome": "Farol",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              68.8,
+              36.9
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanterna",
+          "nome": "Lanterna traseira",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              8.6,
+              49.3
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              17.1,
+              71.4,
+              7.6
+            ],
+            [
+              79,
+              74.3,
+              9.6
+            ]
+          ],
+          "preco": 25,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "motor",
+          "nome": "Neon embaixo do motor",
+          "tipo": "linha",
+          "pontos": [
+            [
+              28,
+              81
+            ],
+            [
+              58,
+              81
+            ]
+          ],
+          "preco": 25,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "tanque",
+          "nome": "Filete do tanque",
+          "tipo": "linha",
+          "pontos": [
+            [
+              41.9,
+              42.9
+            ],
+            [
+              49.5,
+              36.4
+            ],
+            [
+              57.1,
+              35.7
+            ]
+          ],
+          "preco": 15,
+          "cor": "amarelo",
+          "padrao": false
+        },
+        {
+          "id": "escape",
+          "nome": "Escapamento",
+          "tipo": "linha",
+          "pontos": [
+            [
+              15.2,
+              70.7
+            ],
+            [
+              40,
+              71.4
+            ]
+          ],
+          "preco": 20,
+          "cor": "laranja",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-hotrod-chamas",
+      "nome": "Hot Rod Flames (foto real)",
+      "categoria": "customizados",
+      "ativo": true,
+      "destaque": true,
+      "selo": "Foto real",
+      "descricao": "Hot rod preto com pintura de chamas, de frente. Faróis com anel de LED e neon embaixo deixam ele em chamas de verdade.",
+      "imagem": "assets/img/quadros/foto-hotrod-chamas.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Supermac1961 (Flickr)",
+        "licenca": "CC BY 2.0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Hot_Rod_and_Custom_Car_meet,_Monterey_-_Flickr_-_Supermac1961_(6).jpg"
+      },
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              20.5,
+              59.7
+            ],
+            [
+              86.5,
+              62.1
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "aneis",
+          "nome": "Anel nos faróis (olho de anjo)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              20.5,
+              59.7,
+              3
+            ],
+            [
+              86.5,
+              62.1,
+              3
+            ]
+          ],
+          "preco": 25,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "piscas",
+          "nome": "Piscas",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              32.9,
+              69.3
+            ],
+            [
+              73.8,
+              70.7
+            ]
+          ],
+          "preco": 0,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "grade",
+          "nome": "Contorno da grade",
+          "tipo": "linha",
+          "pontos": [
+            [
+              26.7,
+              66.4
+            ],
+            [
+              80.5,
+              67.1
+            ],
+            [
+              75.2,
+              82.1
+            ],
+            [
+              32.4,
+              82.9
+            ],
+            [
+              26.7,
+              66.4
+            ]
+          ],
+          "preco": 25,
+          "cor": "vermelho",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              17,
+              88.6
+            ],
+            [
+              89,
+              88.6
+            ]
+          ],
+          "preco": 30,
+          "cor": "laranja",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-custom-rebaixado",
+      "nome": "Custom Rebaixado 50s (foto real)",
+      "categoria": "customizados",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Clássico dos anos 50 rebaixado, branco com chamas verdes. Neon embaixo e friso aceso realçam o rebaixamento.",
+      "imagem": "assets/img/quadros/foto-custom-rebaixado.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Supermac1961 (Flickr)",
+        "licenca": "CC BY 2.0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Hot_Rod_and_Custom_Car_meet,_Monterey_-_Flickr_-_Supermac1961.jpg"
+      },
+      "leds": [
+        {
+          "id": "farol",
+          "nome": "Farol",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              9.5,
+              67.5
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "lanterna",
+          "nome": "Lanterna",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              96.7,
+              72.1
+            ]
+          ],
+          "preco": 0,
+          "cor": "vermelho",
+          "padrao": true
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo do carro",
+          "tipo": "linha",
+          "pontos": [
+            [
+              12.4,
+              85.7
+            ],
+            [
+              95.2,
+              77.9
+            ]
+          ],
+          "preco": 30,
+          "cor": "verde",
+          "padrao": true
+        },
+        {
+          "id": "friso",
+          "nome": "Friso das chamas",
+          "tipo": "linha",
+          "pontos": [
+            [
+              31.4,
+              72.1
+            ],
+            [
+              72.4,
+              74.3
+            ],
+            [
+              75.2,
+              68.6
+            ],
+            [
+              96.2,
+              67.1
+            ]
+          ],
+          "preco": 20,
+          "cor": "verde",
+          "padrao": false
+        },
+        {
+          "id": "teto",
+          "nome": "Linha do teto",
+          "tipo": "linha",
+          "pontos": [
+            [
+              41.9,
+              42.9
+            ],
+            [
+              57.1,
+              40.4
+            ],
+            [
+              72.4,
+              42.1
+            ],
+            [
+              84.8,
+              48.6
+            ]
+          ],
+          "preco": 20,
+          "cor": "azul-gelo",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              25.2,
+              81.1,
+              5.6
+            ],
+            [
+              84,
+              75.7,
+              4.6
+            ]
+          ],
+          "preco": 25,
+          "cor": "verde",
+          "padrao": false
+        }
+      ]
+    },
+    {
+      "id": "foto-chevy-chamas",
+      "nome": "Chevy 56 Flames (foto real)",
+      "categoria": "customizados",
+      "ativo": true,
+      "destaque": false,
+      "selo": "Foto real",
+      "descricao": "Clássico de 1956 roxo e amarelo com chamas. Fica um espetáculo com anel nos faróis e para-choque aceso.",
+      "imagem": "assets/img/quadros/foto-chevy-chamas.jpg",
+      "proporcao": 1.5,
+      "preco": 219,
+      "credito": {
+        "autor": "Supermac1961 (Flickr)",
+        "licenca": "CC BY 2.0",
+        "fonte": "https://commons.wikimedia.org/wiki/File:Hot_Rod_and_Custom_Car_meet,_Monterey_-_Flickr_-_Supermac1961_(5).jpg"
+      },
+      "leds": [
+        {
+          "id": "farois",
+          "nome": "Faróis",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              12.4,
+              59.3
+            ],
+            [
+              46.7,
+              60
+            ]
+          ],
+          "preco": 0,
+          "cor": "branco-quente",
+          "padrao": true
+        },
+        {
+          "id": "aneis",
+          "nome": "Anel nos faróis (olho de anjo)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              12.4,
+              59.3,
+              2.6
+            ],
+            [
+              46.7,
+              60,
+              2.8
+            ]
+          ],
+          "preco": 25,
+          "cor": "rosa",
+          "padrao": false
+        },
+        {
+          "id": "piscas",
+          "nome": "Piscas",
+          "tipo": "pontos",
+          "pontos": [
+            [
+              13.3,
+              69.7
+            ],
+            [
+              47.6,
+              72.4
+            ]
+          ],
+          "preco": 0,
+          "cor": "laranja",
+          "padrao": true
+        },
+        {
+          "id": "parachoque",
+          "nome": "Para-choque cromado",
+          "tipo": "linha",
+          "pontos": [
+            [
+              9.5,
+              77.9
+            ],
+            [
+              56.2,
+              80
+            ]
+          ],
+          "preco": 20,
+          "cor": "roxo",
+          "padrao": true
+        },
+        {
+          "id": "friso",
+          "nome": "Friso lateral",
+          "tipo": "linha",
+          "pontos": [
+            [
+              53.8,
+              62.1
+            ],
+            [
+              77.1,
+              55.7
+            ],
+            [
+              90,
+              55
+            ]
+          ],
+          "preco": 20,
+          "cor": "amarelo",
+          "padrao": false
+        },
+        {
+          "id": "rodas",
+          "nome": "Rodas (anel nos aros)",
+          "tipo": "anel",
+          "pontos": [
+            [
+              60,
+              77.1,
+              5
+            ],
+            [
+              85.2,
+              64.3,
+              3.2
+            ]
+          ],
+          "preco": 25,
+          "cor": "roxo",
+          "padrao": false
+        },
+        {
+          "id": "neon",
+          "nome": "Neon embaixo",
+          "tipo": "linha",
+          "pontos": [
+            [
+              10,
+              85.5
+            ],
+            [
+              56.5,
+              87
+            ],
+            [
+              88,
+              71
+            ]
+          ],
+          "preco": 30,
+          "cor": "roxo",
           "padrao": false
         }
       ]

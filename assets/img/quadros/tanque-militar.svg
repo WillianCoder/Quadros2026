@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000">
+  <defs>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05070a"/><stop offset=".55" stop-color="#1b1f14"/><stop offset=".8" stop-color="#3a3218"/><stop offset="1" stop-color="#14110a"/></linearGradient>
+    <radialGradient id="sol" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb347" stop-opacity=".45"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient>
+    <linearGradient id="casco" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b7342"/><stop offset=".5" stop-color="#3f4626"/><stop offset="1" stop-color="#1d2111"/></linearGradient>
+    <linearGradient id="torre" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a8350"/><stop offset="1" stop-color="#2e3419"/></linearGradient>
+    <radialGradient id="roda" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#4a4f3a"/><stop offset=".7" stop-color="#2a2d20"/><stop offset="1" stop-color="#0d0e09"/></radialGradient>
+    <g id="rd"><circle r="44" fill="url(#roda)" stroke="#11130c" stroke-width="5"/><circle r="14" fill="#5d6448"/></g>
+  </defs>
+  <rect width="1500" height="1000" fill="url(#ceu)"/>
+  <circle cx="1150" cy="560" r="340" fill="url(#sol)"/>
+  <path d="M0 640 L140 590 L260 615 L420 560 L560 610 L700 585 L860 625 L1020 570 L1180 600 L1340 560 L1500 600 V660 H0Z" fill="#14150c"/>
+  <rect y="650" width="1500" height="350" fill="#0b0b06"/>
+  <g stroke="#c9a85a" stroke-opacity=".15" stroke-width="3"><path d="M0 820 Q400 800 800 830 T1500 815"/><path d="M0 900 Q500 880 1000 905 T1500 890"/></g>
+  <ellipse cx="740" cy="800" rx="560" ry="22" fill="#000" opacity=".85"/>
+  <!-- esteira -->
+  <path d="M250 660 L1180 660 Q1250 660 1260 720 Q1255 790 1180 790 L320 790 Q240 790 230 725 Q232 665 250 660Z" fill="#15170e" stroke="#3a3f2a" stroke-width="6"/>
+  <path d="M260 676 H1180" stroke="#3a3f2a" stroke-width="4" stroke-dasharray="18 10"/>
+  <path d="M300 782 H1190" stroke="#3a3f2a" stroke-width="4" stroke-dasharray="18 10"/>
+  <use href="#rd" x="300" y="726"/><use href="#rd" x="410" y="736"/><use href="#rd" x="520" y="736"/><use href="#rd" x="630" y="736"/>
+  <use href="#rd" x="740" y="736"/><use href="#rd" x="850" y="736"/><use href="#rd" x="960" y="736"/><use href="#rd" x="1070" y="736"/><use href="#rd" x="1185" y="726"/>
+  <!-- casco -->
+  <path d="M200 650 L260 560 L1100 548 L1290 600 L1270 660 Z" fill="url(#casco)" stroke="#8f9866" stroke-width="3"/>
+  <path d="M230 640 H1260" stroke="#11130c" stroke-width="10" opacity=".7"/>
+  <g fill="#2a2f18" opacity=".7"><path d="M360 570 L470 566 L440 620 L340 624Z"/><path d="M820 560 L960 556 L930 610 L800 614Z"/><path d="M1080 572 L1180 590 L1150 630 L1060 622Z"/></g>
+  <!-- torre -->
+  <path d="M470 552 L520 446 Q540 420 590 418 L900 414 Q960 414 990 450 L1050 548 Z" fill="url(#torre)" stroke="#9aa46c" stroke-width="3"/>
+  <g fill="#323819" opacity=".75"><path d="M560 460 L680 452 L650 520 L540 526Z"/><path d="M820 440 L930 446 L960 510 L850 512Z"/></g>
+  <rect x="600" y="388" width="120" height="34" rx="8" fill="#4a512c" stroke="#9aa46c" stroke-width="2"/>
+  <path d="M760 398 L770 300" stroke="#2a2d20" stroke-width="5"/>
+  <!-- canhão -->
+  <rect x="980" y="455" width="420" height="30" rx="8" fill="#3f4626" stroke="#8f9866" stroke-width="3"/>
+  <rect x="1380" y="447" width="54" height="46" rx="8" fill="#2e3419" stroke="#8f9866" stroke-width="3"/>
+  <rect x="1150" y="451" width="40" height="38" rx="6" fill="#2e3419"/>
+  <!-- detalhes -->
+  <circle cx="1260" cy="612" r="12" fill="#e8e2c8" opacity=".55"/>
+  <rect x="204" y="600" width="14" height="30" fill="#4a0b0b"/>
+  <text x="640" y="610" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="40" fill="#e8e2c8" opacity=".35" letter-spacing="6">★ 011 ★</text>
+</svg>

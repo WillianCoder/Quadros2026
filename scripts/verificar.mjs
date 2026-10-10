@@ -41,6 +41,11 @@ if (cat) {
     if (q.categoria && !catIds.has(q.categoria)) erro(n + ': categoria inexistente "' + q.categoria + '"');
     if (!imagemOk(q.imagem || '')) erro(n + ': imagem inválida');
     else if (/^assets\//.test(q.imagem) && !fs.existsSync(arq(q.imagem))) erro(n + ': arquivo de imagem não encontrado ' + q.imagem);
+    if (q.credito != null) {
+      const c = q.credito;
+      if (typeof c !== 'object' || ['autor', 'licenca', 'fonte'].some((k) => c[k] != null && typeof c[k] !== 'string')) erro(n + ': credito inválido');
+      else if (c.fonte && !/^https:\/\//.test(c.fonte)) erro(n + ': credito.fonte precisa começar com https://');
+    }
     if (/^data:/.test(q.imagem || '')) aviso(n + ': imagem dentro do catálogo (publique pelo painel para virar arquivo)');
     if (!(Number(q.proporcao) > 0.3 && Number(q.proporcao) < 3.5)) erro(n + ': proporcao inválida');
     if (typeof q.preco !== 'number' || q.preco < 0) erro(n + ': preco inválido');

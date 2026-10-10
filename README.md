@@ -1,4 +1,4 @@
-# Neon Garage 💡 — quadros de carros e motos com LED
+# LED Quadros 💡 — quadros de carros e motos com LED
 
 Site para divulgar e vender **quadros decorativos com LED** de carros, motos e caminhões.
 O grande diferencial: **o cliente escolhe onde vai o LED** — toca no quadro para acender faróis, rodas,
@@ -55,6 +55,10 @@ token *fine-grained*, só este repositório, **Contents: Read and write**, 90 di
 
 - O cliente toca em **Enviar pedido pelo WhatsApp**: abre uma conversa com o seu número com o resumo completo,
   o valor estimado, o **código do pedido** e o **link da montagem** (abrindo o link você vê exatamente o quadro que ele montou).
+- Logo depois, o site entrega ao cliente a **imagem do quadro montado** (com os LEDs, o código e o resumo) e, no
+  "Seu veículo no quadro", a **foto original** — no celular ele toca em "Enviar imagens no WhatsApp" e manda na mesma conversa.
+- **Consultar a foto pelo link:** abra o link da montagem e toque em **"Carregar a foto que o cliente mandou"** —
+  os LEDs aparecem exatamente onde ele marcou (a foto não viaja dentro do link).
 - **Sem Firebase** (modo de teste) isso já funciona: o pedido chega pelo WhatsApp.
 - **Com Firebase** (grátis), os pedidos também ficam guardados na aba **Pedidos** do painel, inclusive a foto do veículo.
   Passo a passo no painel → Configurações → Firebase.

@@ -5,7 +5,7 @@
  * O significado de cada campo está em docs/ARQUITETURA.md.
  */
 window.SITE_CONFIG = {
-  "marca": "Neon Garage",
+  "marca": "LED Quadros",
   "slogan": "Quadros de carros e motos com LED — você escolhe onde acende",
   "siteUrl": "",
   "repo": "WillianCoder/Quadros2026",

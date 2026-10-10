@@ -348,6 +348,9 @@
         campo('Descrição curta', entrada(q.descricao, { type: 'area', maxlength: 200, placeholder: 'Ex.: Fica top com neon azul embaixo.' }, (v) => { q.descricao = v; })),
         U.el('div', { class: 'grade-2' }, [
           campo('Selo (opcional)', entrada(q.selo, { maxlength: 20, placeholder: 'Novo, Promoção…' }, (v) => { q.selo = v; })),
+          campo('Crédito da foto (se não for sua)', entrada((q.credito || {}).autor, { maxlength: 80, placeholder: 'Nome do fotógrafo' }, (v) => { q.credito = Object.assign({}, q.credito, { autor: v }); })),
+          campo('Licença da foto', entrada((q.credito || {}).licenca, { maxlength: 40, placeholder: 'Domínio público, CC BY 2.0…' }, (v) => { q.credito = Object.assign({}, q.credito, { licenca: v }); })),
+          campo('Link da fonte da foto', entrada((q.credito || {}).fonte, { maxlength: 300, placeholder: 'https://commons.wikimedia.org/…' }, (v) => { q.credito = Object.assign({}, q.credito, { fonte: v }); })),
           U.el('div', {}, [
             U.el('label', { class: 'check' }, [entrada(q.ativo !== false, { type: 'checkbox' }, (v) => { q.ativo = v; }), U.el('span', { text: 'Mostrar no site' })]),
             U.el('label', { class: 'check' }, [entrada(!!q.destaque, { type: 'checkbox' }, (v) => { q.destaque = v; }), U.el('span', { text: '⭐ Destaque' })])
@@ -425,7 +428,7 @@
   let filtroStatus = '';
   async function pedidos(p) {
     p.append(U.el('h1', { text: '🧾 Pedidos' }));
-    if (Store.modo === 'local') p.append(U.el('p', { class: 'aviso', text: '🧪 Modo de teste: sem o Firebase, só aparecem aqui os pedidos feitos neste navegador. Os pedidos dos clientes chegam completos no seu WhatsApp (com o link da montagem). Para guardar todos online, configure o Firebase na aba Configurações.' }));
+    if (Store.modo === 'local') p.append(U.el('p', { class: 'aviso', text: '🧪 Modo de teste: sem o Firebase, só aparecem aqui os pedidos feitos neste navegador. Os pedidos dos clientes chegam no seu WhatsApp com o resumo, o link da montagem, a imagem do quadro montado e (no "Seu veículo") a foto do cliente. Para consultar a foto pelo link, abra o link e toque em "Carregar a foto que o cliente mandou". Para guardar tudo aqui no painel, inclusive as fotos, configure o Firebase na aba Configurações.' }));
     else {
       try { await Store.iniciar(); } catch (e) { p.append(U.el('p', { class: 'aviso', text: 'Não consegui conectar ao Firebase. Confira a configuração.' })); return; }
       if (!Store.admin()) { p.append(login()); return; }
