@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patrulha Lilás</title>
+<?!= include('Estilo'); ?>
+</head>
+<body>
+<header class="topo">
+  <button id="btMenu" class="bt-icone so-mobile" aria-label="Abrir menu">☰</button>
+  <div class="marca">
+    <svg class="brasao" viewBox="0 0 64 72" aria-hidden="true"><path d="M32 2 60 12v22c0 18-12 30-28 36C16 64 4 52 4 34V12Z" fill="#6b4fa0"/><path d="M32 8 54 16v18c0 14-9 24-22 29C19 58 10 48 10 34V16Z" fill="#efe8fa"/><path d="m32 18 4.4 9 9.9 1.4-7.2 7 1.7 9.8L32 40.6l-8.8 4.6 1.7-9.8-7.2-7 9.9-1.4Z" fill="#b08fd8" stroke="#4b2e83" stroke-width="1.5"/></svg>
+    <div><strong>Patrulha Lilás</strong><small id="subUnidade">Polícia Militar · Proteção à Mulher</small></div>
+  </div>
+  <span id="usuario" class="usuario"></span>
+</header>
+
+<nav id="menu" class="menu" aria-label="Menu principal">
+  <p class="grupo">Início</p>
+  <a href="#inicio" data-pg="inicio">🏠 Painel</a>
+  <p class="grupo">Ocorrências</p>
+  <a href="#vd" data-pg="vd">💜 Violência doméstica / MPU</a>
+  <a href="#sexual" data-pg="sexual">🛡️ Crime sexual</a>
+  <p class="grupo">Mulher Segura</p>
+  <a href="#ligacao" data-pg="ligacao">📞 Roteiro da ligação</a>
+  <a href="#visita" data-pg="visita">🏡 Visita da patrulha</a>
+  <a href="#livro" data-pg="livro">📒 Livro de registro</a>
+  <p class="grupo">Gestão</p>
+  <a href="#escala" data-pg="escala">📅 Gerador de escala</a>
+  <a href="#indicadores" data-pg="indicadores">📊 Indicadores</a>
+  <p class="grupo">Consulta</p>
+  <a href="#pop" data-pg="pop">📋 POP 2.09 – passo a passo</a>
+  <a href="#rede" data-pg="rede">🤝 Rede de apoio</a>
+  <p class="grupo">Arquivos</p>
+  <a href="#drive" data-pg="drive">📁 Meus documentos</a>
+  <a href="#registro" data-pg="registro">🔒 Registro de edições</a>
+  <a href="#admin" data-pg="admin" class="discreto">⚙️ Administrador</a>
+</nav>
+
+<main id="conteudo" class="conteudo" tabindex="-1"></main>
+<div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+
+<?!= include('App'); ?>
+</body>
+</html>

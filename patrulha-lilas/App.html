@@ -1,0 +1,422 @@
+<script>
+(function () {
+  'use strict';
+  var C = document.getElementById('conteudo');
+  var CONFIG = { unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo' };
+  var EMAIL = '';
+
+  /* ---------- servidor (ou modo demonstração fora do Google) ---------- */
+  var DEMO = !(window.google && google.script && google.script.run);
+  function srv(fn) {
+    var args = [].slice.call(arguments, 1);
+    return new Promise(function (ok, erro) {
+      if (DEMO) return setTimeout(function () { ok(demo(fn, args)); }, 200);
+      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { erro(e && e.message ? e.message : String(e)); });
+      r[fn].apply(r, args);
+    });
+  }
+  function demo(fn, a) {
+    var reg = JSON.parse(localStorage.getItem('demoReg') || '[]');
+    var log = function (acao, mod, d) { reg.unshift([new Date().toLocaleString('pt-BR'), 'demonstracao@local', acao, mod, d, '']); localStorage.setItem('demoReg', JSON.stringify(reg)); };
+    if (fn === 'iniciar') return { email: 'modo demonstração', config: CONFIG, pasta: '#' };
+    if (fn === 'salvarDocumento') { log('Criou documento', a[0], a[1]); return { url: '#', pasta: '#' }; }
+    if (fn === 'lerRegistro') return { linhas: reg, url: '#' };
+    if (fn === 'listarArquivos') return { pasta: '#', arquivos: reg.filter(function (r) { return r[2] === 'Criou documento'; }).map(function (r) { return { nome: r[4], url: '#', caminho: r[3] }; }) };
+    if (fn === 'lerLivro') return { url: '#', linhas: [] };
+    if (fn === 'adminEntrar') { if (a[0] !== 'demo') throw new Error('Senha incorreta (no modo demonstração use: demo)'); return { config: CONFIG }; }
+    return {};
+  }
+
+  /* ---------- utilidades ---------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function hoje() { var d = new Date(); return d.toISOString().slice(0, 10); }
+  function agoraHora() { return new Date().toTimeString().slice(0, 5); }
+  function dataBR(s) { if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return s || ''; var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  var timer;
+  function aviso(html) { var a = document.getElementById('aviso'); a.innerHTML = html; a.classList.add('ver'); clearTimeout(timer); timer = setTimeout(function () { a.classList.remove('ver'); }, 5000); }
+  function cabecalho(titulo) {
+    return '<div class="cab"><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc(CONFIG.subunidade) + '<h1>' + esc(titulo) + '</h1></div>';
+  }
+  function imprimir(htmlRelatorio) {
+    var r = C.querySelector('.relatorio');
+    if (htmlRelatorio && r) { r.innerHTML = htmlRelatorio; document.body.classList.add('modo-relatorio'); }
+    window.print();
+    document.body.classList.remove('modo-relatorio');
+  }
+  function btImprimir() { return '<button type="button" class="imprimir" data-acao="imprimir" title="Imprimir">🖨 imprimir</button>'; }
+  function titulo(t, d) { return '<div class="acoes nao-imprimir" style="margin:0"><div><h1>' + esc(t) + '</h1></div>' + btImprimir() + '</div>' + (d ? '<p class="desc tela">' + esc(d) + '</p>' : ''); }
+
+  /* ---------- formulários declarativos ---------- */
+  var SN = ['', 'Sim', 'Não'];
+  var ORIGEM = ['', 'Emergência 190', 'Cabine Lilás (COPOM)', 'App SOS Mulher', 'App SP Mulher Segura', 'Campanha Sinal Vermelho', 'Abrigo Amigo', 'Iniciativa da equipe', 'Outro'];
+  var VINCULO = ['', 'Marido/companheiro', 'Ex-marido/ex-companheiro', 'Namorado/ex-namorado', 'Filho(a)', 'Pai/mãe', 'Irmão(ã)', 'Outro familiar', 'Outro'];
+
+  var FORMS = {
+    vd: {
+      titulo: 'Atendimento de Violência Doméstica / Descumprimento de MPU', modulo: 'Violência Doméstica',
+      desc: 'POP 2.09.01 — preencha durante ou logo após o atendimento. Gera relatório para imprimir e salvar.',
+      alerta: 'Certifique-se de que é violência doméstica e/ou descumprimento de Medida Protetiva. Havendo MPU contra o autor, as partes devem ser conduzidas ao DP, independentemente de outros fatores de risco.',
+      secoes: [
+        ['Acionamento', [['data', 'Data', 'date'], ['hora', 'Horário', 'time'], ['bo', 'Nº ocorrência / BOe'], ['origem', 'Origem do acionamento', ORIGEM], ['viatura', 'Viatura / prefixo'], ['equipe', 'Equipe (grad., RE, nome)'], ['endereco', 'Endereço da ocorrência', 'larga']]],
+        ['Vítima', [['vNome', 'Nome'], ['vIdade', 'Idade', 'number'], ['vTel', 'Telefone'], ['vDoc', 'Documento (RG/CPF)'], ['vEnd', 'Endereço', 'larga']]],
+        ['Autor', [['aNome', 'Nome'], ['aIdade', 'Idade', 'number'], ['aVinculo', 'Vínculo com a vítima', VINCULO], ['aDoc', 'Documento (RG/CPF)'], ['aAntec', 'Antecedentes / pesquisa', 'larga']]],
+        ['Fatos', [['natureza', 'Natureza', ['', 'Lesão corporal', 'Ameaça', 'Descumprimento de MPU (art. 24-A)', 'Vias de fato', 'Injúria / difamação', 'Dano', 'Perseguição (stalking)', 'Violência psicológica', 'Outro']],
+          ['mpu', 'Existe Medida Protetiva?', ['', 'Sim — documento apresentado', 'Sim — informado pelo app', 'Não', 'Não sabe']], ['mpuNum', 'Nº do processo da MPU'],
+          ['lesao', 'Lesão aparente?', SN], ['medico', 'Atendimento médico (local)'], ['criancas', 'Crianças/dependentes no local?', SN], ['armas', 'Arma(s) no local / apreendida(s)?', SN],
+          ['relato', 'Relato dos fatos', 'texto']]],
+        ['Providências (POP 2.09.01)', 'checks', [
+          'Interação gravada em COP (quando disponível)',
+          'Vítima localizada e integridade física resguardada',
+          'Policial que iniciou o atendimento seguiu até o fim (evitar revitimização)',
+          'Vítima coberta/preservada se sem vestes ou vestes rasgadas',
+          'Estado físico e psíquico avaliado; atendimento médico providenciado se necessário',
+          'Informações transmitidas pela rede rádio',
+          'Suspeito localizado e conduzido à área de segurança',
+          'Abordagem e busca pessoal (POP 1.01.05 / 1.01.06)',
+          'Uso de algemas justificado (POP 5.03.02)',
+          'Direitos constitucionais informados ao preso',
+          'Verificado documento da MPU (se não acionado por app)',
+          'Partes qualificadas, testemunhas arroladas e antecedentes pesquisados',
+          'Vítima orientada sobre SOS Mulher, SP Mulher Segura e rede de apoio',
+          'Funcionário de farmácia (Sinal Vermelho) NÃO arrolado como testemunha']],
+        ['Encaminhamento', [['dp', 'Distrito Policial / DDM'], ['resultado', 'Resultado', ['', 'Prisão em flagrante', 'Registro de BO sem prisão', 'Autor evadido — buscas', 'Orientação às partes', 'Outro']], ['obs', 'Observações', 'texto']]]
+      ]
+    },
+    sexual: {
+      titulo: 'Atendimento de Ocorrência de Crime Sexual', modulo: 'Crime Sexual',
+      desc: 'POP 2.09.02 — acolhimento sem revitimização. Gera relatório para imprimir e salvar.',
+      alerta: 'Prioridade é a vítima: atendimento médico imediato (profilaxia é mais eficaz nas primeiras horas). Oriente a não tomar banho nem trocar/lavar roupas, para preservar vestígios.',
+      secoes: [
+        ['Acionamento', [['data', 'Data', 'date'], ['hora', 'Horário', 'time'], ['bo', 'Nº ocorrência / BOe'], ['origem', 'Origem do acionamento', ORIGEM], ['local', 'Tipo de local', ['', 'Residência', 'Via pública', 'Transporte público', 'Bar/casa de show (Protocolo Não Se Cale)', 'Outro']], ['endereco', 'Endereço', 'larga'], ['equipe', 'Equipe (grad., RE, nome)', 'larga']]],
+        ['Vítima', [['vNome', 'Nome'], ['vIdade', 'Idade', 'number'], ['vTel', 'Telefone'], ['vDoc', 'Documento']]],
+        ['Suspeito', [['aNome', 'Nome / características'], ['aVinculo', 'Conhece a vítima?', ['', 'Desconhecido', 'Conhecido', 'Familiar', 'Parceiro/ex']], ['aSit', 'Situação', ['', 'Detido no local', 'Evadido', 'Identificado, não localizado']]]],
+        ['Fatos', [['natureza', 'Natureza', ['', 'Estupro', 'Estupro de vulnerável', 'Importunação sexual', 'Assédio sexual', 'Registro não autorizado de intimidade', 'Outro']], ['relato', 'Relato (resumido, sem expor a vítima)', 'texto']]],
+        ['Providências', 'checks', [
+          'Interação gravada em COP (quando disponível)',
+          'Vítima acolhida em local reservado, longe de curiosos',
+          'Atendimento médico / hospital de referência acionado',
+          'Vítima orientada a preservar vestígios (não banhar, não lavar roupas)',
+          'Local preservado para perícia',
+          'Mesmo policial acompanhou a vítima do início ao fim',
+          'Testemunhas e imagens de câmeras identificadas',
+          'Vítima informada sobre Sala Lilás (IML) e DDM',
+          'Conselho Tutelar acionado (vítima criança/adolescente)']],
+        ['Encaminhamento', [['hospital', 'Hospital / unidade de saúde'], ['dp', 'DP / DDM'], ['obs', 'Observações', 'texto']]]
+      ]
+    },
+    visita: {
+      titulo: 'Relatório de Visita — Patrulha Mulher Segura', modulo: 'Visitas',
+      desc: 'Registro da visita presencial à vítima acompanhada.',
+      secoes: [
+        ['Visita', [['data', 'Data', 'date'], ['hora', 'Horário', 'time'], ['bo', 'Nº ocorrência / BOe de origem'], ['equipe', 'Equipe (grad., RE, nome)', 'larga'], ['vNome', 'Nome da vítima'], ['vTel', 'Telefone'], ['endereco', 'Endereço', 'larga']]],
+        ['Situação encontrada', [['atendeu', 'Vítima encontrada?', SN], ['autorPresente', 'Autor presente/próximo?', SN], ['novaViolencia', 'Nova violência desde o fato?', SN], ['mpu', 'Possui MPU vigente?', SN], ['situacao', 'Descrição', 'texto']]],
+        ['Orientações prestadas', 'checks', ['Apps SOS Mulher / SP Mulher Segura', 'Botão do pânico (quando há MPU)', 'DDM / DDM Online', 'Casa Abrigo', 'Auxílio-Aluguel (R$ 500/mês)', 'Ligue 180 / 190', 'Centro de referência / assistência social']],
+        ['Encaminhamento', [['proxima', 'Próxima ação', ['', 'Nova visita', 'Nova ligação', 'Encerrar acompanhamento', 'Encaminhar à rede']], ['proximaData', 'Data prevista', 'date'], ['obs', 'Observações', 'texto']]]
+      ]
+    }
+  };
+
+  function campo(c) {
+    var id = 'f_' + c[0], tipo = c[2], larga = tipo === 'larga' || tipo === 'texto';
+    var h = '<div' + (larga ? ' style="grid-column:1/-1"' : '') + '><label for="' + id + '">' + esc(c[1]) + '</label>';
+    if (Array.isArray(tipo)) h += '<select id="' + id + '" name="' + c[0] + '">' + tipo.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
+    else if (tipo === 'texto') h += '<textarea id="' + id + '" name="' + c[0] + '"></textarea>';
+    else h += '<input id="' + id + '" name="' + c[0] + '" type="' + (tipo && tipo !== 'larga' ? tipo : 'text') + '"' + (tipo === 'date' ? ' value="' + hoje() + '"' : tipo === 'time' ? ' value="' + agoraHora() + '"' : '') + '>';
+    return h + '</div>';
+  }
+  function telaForm(chave) {
+    var f = FORMS[chave];
+    var h = titulo(f.titulo, f.desc) + '<div class="tela">' + (f.alerta ? '<div class="alerta">⚠️ ' + esc(f.alerta) + '</div>' : '') + '<form id="form">';
+    f.secoes.forEach(function (s, i) {
+      h += '<div class="cartao"><h2 style="margin-top:0">' + esc(s[0]) + '</h2>';
+      if (s[1] === 'checks') h += s[2].map(function (t, j) { return '<label class="check"><input type="checkbox" name="ck' + i + '_' + j + '"> ' + esc(t) + '</label>'; }).join('');
+      else h += '<div class="grade">' + s[1].map(campo).join('') + '</div>';
+      h += '</div>';
+    });
+    h += '<div class="acoes"><button class="bt" type="submit">💾 Salvar no Drive</button><button class="bt sec" type="button" data-acao="relatorio">🖨 Imprimir relatório</button><button class="bt sec" type="reset">Limpar</button></div></form></div><div class="relatorio"></div>';
+    C.innerHTML = h;
+    var form = document.getElementById('form');
+    var gera = function () { return relatorioForm(f, form); };
+    C.querySelector('[data-acao=relatorio]').onclick = function () { imprimir(gera()); };
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(gera()); };
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      var d = dadosForm(form), nome = f.titulo.split(' — ')[0] + ' - ' + (d.bo || d.vNome || 'sem nº');
+      salvar(f.modulo, nome, gera(), d, form.querySelector('[type=submit]'));
+    };
+  }
+  function dadosForm(form) { var d = {}; [].forEach.call(form.elements, function (el) { if (el.name) d[el.name] = el.type === 'checkbox' ? el.checked : el.value; }); return d; }
+  function relatorioForm(f, form) {
+    var d = dadosForm(form), h = cabecalho(f.titulo);
+    f.secoes.forEach(function (s, i) {
+      h += '<h2>' + esc(s[0]) + '</h2><table>';
+      if (s[1] === 'checks') h += s[2].map(function (t, j) { return '<tr><td style="width:30px;text-align:center">' + (d['ck' + i + '_' + j] ? '☑' : '☐') + '</td><td>' + esc(t) + '</td></tr>'; }).join('');
+      else h += s[1].map(function (c) { var v = d[c[0]]; if (c[2] === 'date') v = dataBR(v); return '<tr><th>' + esc(c[1]) + '</th><td>' + esc(v).replace(/\n/g, '<br>') + '</td></tr>'; }).join('');
+      h += '</table>';
+    });
+    return h + '<p style="font-size:9pt;color:#666">Gerado em ' + new Date().toLocaleString('pt-BR') + ' por ' + esc(EMAIL) + '</p><div class="ass">______________________________________<br>Policial responsável (grad., RE, nome)</div>';
+  }
+  function salvar(modulo, nome, html, dados, bt) {
+    if (bt) { bt.disabled = true; bt.textContent = 'Salvando…'; }
+    return srv('salvarDocumento', modulo, nome, html, dados).then(function (r) {
+      aviso('✅ Salvo no seu Drive. <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir arquivo</a>');
+    }).catch(function (e) { aviso('❌ ' + esc(e)); }).then(function () { if (bt) { bt.disabled = false; bt.textContent = '💾 Salvar no Drive'; } });
+  }
+
+  /* ---------- roteiro da ligação ---------- */
+  var PERGUNTAS = [
+    'Bom dia/boa tarde. Eu poderia falar com a senhora [nome da mulher]?',
+    'Meu nome é [posto/graduação e nome], sou policial militar do Programa Mulher Segura.',
+    'A senhora está sozinha neste momento?',
+    'A senhora pode conversar agora ou prefere que eu retorne em outro horário?',
+    'Estou entrando em contato para um acompanhamento relacionado à ocorrência registrada no dia [data].',
+    'A senhora autoriza que eu faça algumas perguntas para verificar como está sua segurança atualmente?',
+    'Preciso confirmar primeiro: a senhora está correndo algum perigo neste exato momento?',
+    'O autor está na mesma residência ou no mesmo local que a senhora?',
+    'Depois daquele atendimento, ocorreu alguma nova ameaça, agressão ou discussão?',
+    'Como a senhora está se sentindo física e emocionalmente?',
+    'A senhora já conhece os aplicativos "SOS Mulher" e "SP Mulher Segura"?',
+    'A senhora gostaria de receber uma visita presencial da Patrulha Mulher Segura?',
+    'Qual seria o melhor dia e horário?',
+    'A senhora gostaria de receber uma nova ligação?'
+  ];
+  var ABERTAS = { 1: 1, 4: 1, 9: 1, 12: 1 };
+  function telaLigacao() {
+    var nome = function (n, l, t) { return campo([n, l, t]); };
+    var h = titulo('Roteiro de Contato Telefônico', 'Programa Mulher Segura — registre as respostas durante a ligação. Ao salvar, a linha entra automaticamente no Livro de Registro.') +
+      '<div class="tela"><form id="form"><div class="cartao"><div class="grade">' +
+      nome('data', 'Data', 'date') + nome('hora', 'Horário', 'time') + nome('nome', 'Nome da mulher') + nome('telefone', 'Telefone') + nome('prot', 'Protocolo') + nome('bo', 'Nº ocorrência / BOe') +
+      nome('dataBo', 'Data da ocorrência', 'date') + nome('natureza', 'Natureza') + nome('policial', 'Policial responsável (grad. e nome)') + nome('re', 'RE') + nome('qra', 'QRA') + nome('unidade', 'Unidade') +
+      '</div></div><div class="alerta">Se ela disser que corre perigo agora (pergunta 7): encerre o roteiro e acione o 190 imediatamente.</div><div class="cartao">' +
+      PERGUNTAS.map(function (p, i) {
+        return '<div class="pergunta"><p>' + (i + 1) + '. ' + esc(p) + '</p>' + (ABERTAS[i] ? '' :
+          '<div class="opcoes">' + ['Sim', 'Não', 'Não respondeu'].map(function (o) { return '<label><input type="radio" name="p' + i + '" value="' + o + '"> ' + o + '</label>'; }).join('') + '</div>') +
+          (i >= 6 ? '<input name="o' + i + '" placeholder="Observação" style="margin-top:6px">' : '') + '</div>';
+      }).join('') +
+      '</div><div class="cartao"><h2 style="margin-top:0">Resultado</h2><div class="grade">' +
+      campo(['resultado', 'Resultado da ligação', ['', 'Atendida — contato realizado', 'Não atendeu', 'Número inexistente/errado', 'Recusou contato', 'Pediu retorno em outro horário']]) +
+      campo(['aceitaVisita', 'Aceita visita?', SN]) + campo(['dataVisita', 'Data/hora da visita', 'datetime-local']) + campo(['novaLigacao', 'Aceita nova ligação?', SN]) + campo(['obs', 'Orientações prestadas / observações', 'texto']) +
+      '</div><div class="dica" style="margin-top:14px"><b>Encerramento:</b> “Eu agradeço por conversar comigo. A senhora não precisa enfrentar essa situação sozinha. Caso ocorra nova ameaça, agressão, aproximação do autor ou descumprimento da medida protetiva, acione imediatamente a Polícia Militar.”</div></div>' +
+      '<div class="acoes"><button class="bt" type="submit">💾 Salvar e lançar no Livro</button><button class="bt sec" type="button" data-acao="relatorio">🖨 Imprimir</button><button class="bt sec" type="reset">Limpar</button></div></form></div><div class="relatorio"></div>';
+    C.innerHTML = h;
+    var form = document.getElementById('form');
+    var gera = function () {
+      var d = dadosForm(form), r = cabecalho('Roteiro de Contato Telefônico — Programa Mulher Segura') + '<table>' +
+        [['Data', dataBR(d.data)], ['Horário', d.hora], ['Nome da mulher', d.nome], ['Telefone', d.telefone], ['Nº ocorrência/BOe', d.bo], ['Policial responsável', d.policial + ' — RE ' + d.re]].map(function (x) { return '<tr><th>' + x[0] + '</th><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
+        '</table><h2>Respostas</h2><table>' + PERGUNTAS.map(function (p, i) { return '<tr><td>' + (i + 1) + '. ' + esc(p) + '</td><td style="width:35%">' + esc(d['p' + i] || '') + (d['o' + i] ? ' — ' + esc(d['o' + i]) : '') + '</td></tr>'; }).join('') +
+        '</table><h2>Resultado</h2><table>' + [['Resultado', d.resultado], ['Aceita visita', d.aceitaVisita], ['Data/hora visita', (d.dataVisita || '').replace('T', ' ')], ['Nova ligação', d.novaLigacao], ['Observações', d.obs]].map(function (x) { return '<tr><th>' + x[0] + '</th><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
+        '</table><div class="ass">______________________________________<br>' + esc(d.policial || 'Policial responsável') + '</div>';
+      return r;
+    };
+    C.querySelector('[data-acao=relatorio]').onclick = C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(gera()); };
+    form.onsubmit = function (e) {
+      e.preventDefault(); var d = dadosForm(form);
+      d.dataBo = dataBR(d.dataBo); d.dataVisita = (d.dataVisita || '').replace('T', ' '); d.data = dataBR(d.data);
+      salvar('Ligações Mulher Segura', 'Ligação - ' + (d.nome || 'sem nome'), gera(), d, form.querySelector('[type=submit]'));
+    };
+  }
+
+  /* ---------- livro de registro ---------- */
+  var COL_LIVRO = ['PROT', 'DATA', 'TELEFONE', 'NOME DA VÍTIMA', 'NATUREZA', 'RESULTADO', 'ACEITA VISITA', 'DATA/HORA VISITA', 'RE', 'QRA', 'DATA/HORA LIGAÇÃO', 'UNIDADE', 'ASSINATURA'];
+  function telaLivro() {
+    C.innerHTML = titulo('Livro de Registro', 'Ligações do Programa Mulher Segura lançadas por você (planilha no seu Drive).') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
+    srv('lerLivro').then(function (r) {
+      var linhas = r.linhas.length ? r.linhas : [];
+      while (linhas.length < 15) linhas.push(COL_LIVRO.map(function () { return ''; }));
+      C.querySelector('.cartao').outerHTML = '<div class="cartao"><p class="tela nao-imprimir"><a href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir pasta do livro no Drive</a></p><div class="cab relatorio" style="display:none"></div>' +
+        '<div class="rolar"><table class="tabela"><tr>' + COL_LIVRO.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>' +
+        linhas.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + esc(v) + '&nbsp;</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></div>';
+    }).catch(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  /* ---------- gerador de escala ---------- */
+  var DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  function lerLocal(k, p) { try { return localStorage.getItem(k) || p; } catch (e) { return p; } }
+  function gravarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+  function telaEscala() {
+    C.innerHTML = titulo('Gerador de Escala', 'Preencha o efetivo, clique em Gerar e ajuste o que quiser direto na tabela (clique na célula para editar).') +
+      '<div class="tela cartao nao-imprimir"><div class="grade">' +
+      campo(['eTitulo', 'Título', 'larga']) + campo(['eInicio', 'Data de início', 'date']) + campo(['eDias', 'Quantidade de dias', 'number']) + campo(['ePorVtr', 'PMs por viatura', 'number']) +
+      campo(['eVtr', 'Viaturas / Cias (separe por vírgula)', 'larga']) + campo(['eHor', 'Horários (separe por vírgula; um por viatura, ou um para todas)', 'larga']) +
+      campo(['eEfetivo', 'Efetivo — um por linha: GRAD; RE; NOME', 'texto']) +
+      '</div><div class="acoes"><button class="bt" data-acao="gerar">⚡ Gerar escala</button><button class="bt sec" data-acao="linha">+ Linha</button><button class="bt sec" data-acao="salvarEscala">💾 Salvar no Drive</button></div></div>' +
+      '<div id="escala" class="cartao"></div>';
+    var g = function (id) { return document.getElementById('f_' + id); };
+    g('eTitulo').value = lerLocal('eTitulo', 'ESCALA VIATURAS LILÁS');
+    g('eDias').value = lerLocal('eDias', '7'); g('ePorVtr').value = lerLocal('ePorVtr', '2');
+    g('eVtr').value = lerLocal('eVtr', '1ª Cia, 2ª Cia, 3ª Cia');
+    g('eHor').value = lerLocal('eHor', '04h45 às 12h45, 10h00 às 22h00, 14h00 às 22h00');
+    g('eEfetivo').value = lerLocal('eEfetivo', 'SD; 000000-0; NOME DO POLICIAL\nCB; 000000-0; NOME DO POLICIAL');
+    g('eEfetivo').style.minHeight = '160px';
+    var salvo = lerLocal('escalaHtml', ''); if (salvo) document.getElementById('escala').innerHTML = salvo; else gerar();
+
+    function gerar() {
+      ['eTitulo', 'eDias', 'ePorVtr', 'eVtr', 'eHor', 'eEfetivo'].forEach(function (k) { gravarLocal(k, g(k).value); });
+      var ini = g('eInicio').value ? new Date(g('eInicio').value + 'T12:00') : new Date();
+      var dias = Math.min(31, Math.max(1, +g('eDias').value || 7)), por = Math.min(6, Math.max(1, +g('ePorVtr').value || 2));
+      var vtrs = g('eVtr').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var hors = g('eHor').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var ef = g('eEfetivo').value.split('\n').map(function (l) { var p = l.split(';').map(function (s) { return s.trim(); }); return p[2] ? p : null; }).filter(Boolean);
+      if (!vtrs.length) vtrs = ['Viatura 1'];
+      var fim = new Date(ini); fim.setDate(fim.getDate() + dias - 1);
+      var fmt = function (d) { return ('0' + d.getDate()).slice(-2) + MESES[d.getMonth()].toUpperCase(); };
+      var h = '<div class="cab" style="text-align:center"><strong>' + esc(CONFIG.unidade) + '</strong><h1 contenteditable="true">' + esc(g('eTitulo').value) + ' — ' + fmt(ini) + ' A ' + fmt(fim) + String(fim.getFullYear()).slice(2) + '</h1></div>' +
+        '<div class="rolar"><table class="tabela"><thead><tr><th>Dia da semana</th><th>Dia</th><th>Viatura</th><th>Horário</th><th>GRAD.</th><th>RE</th><th>QRA</th></tr></thead><tbody>';
+      var k = 0;
+      for (var d = 0; d < dias; d++) {
+        var dt = new Date(ini); dt.setDate(dt.getDate() + d);
+        var usados = {};
+        vtrs.forEach(function (v, vi) {
+          var hor = hors[vi % (hors.length || 1)] || '';
+          for (var p = 0; p < por; p++) {
+            var pm = ['', '', ''];
+            if (ef.length) { // rodízio sem repetir o mesmo PM no mesmo dia
+              for (var t = 0; t < ef.length; t++) { var c = ef[(k + t) % ef.length]; if (!usados[c[1] + c[2]]) { pm = c; k = (k + t + 1) % ef.length; usados[c[1] + c[2]] = 1; break; } }
+            }
+            h += '<tr>' + [p === 0 && vi === 0 ? DIAS[dt.getDay()] : '', p === 0 && vi === 0 ? dt.getDate() + MESES[dt.getMonth()] + '.' : '', p === 0 ? v : '', p === 0 ? hor : '', pm[0], pm[1], pm[2]]
+              .map(function (x) { return '<td contenteditable="true">' + esc(x) + '</td>'; }).join('') + '</tr>';
+          }
+        });
+      }
+      h += '</tbody></table></div><p contenteditable="true" style="font-size:12px;color:#555">* OBS: preencher com o efetivo nos espaços em branco.</p>';
+      document.getElementById('escala').innerHTML = h; guardar();
+    }
+    function guardar() { gravarLocal('escalaHtml', document.getElementById('escala').innerHTML); }
+    document.getElementById('escala').addEventListener('input', guardar);
+    C.querySelector('[data-acao=gerar]').onclick = function () { if (!lerLocal('escalaHtml', '') || confirm('Gerar de novo substitui a escala atual. Continuar?')) gerar(); };
+    C.querySelector('[data-acao=linha]').onclick = function () { var tb = C.querySelector('#escala tbody'); if (tb) { tb.insertAdjacentHTML('beforeend', '<tr>' + '<td contenteditable="true"></td>'.repeat(7) + '</tr>'); guardar(); } };
+    C.querySelector('[data-acao=salvarEscala]').onclick = function (e) { var el = document.getElementById('escala'); salvar('Escalas', el.querySelector('h1') ? el.querySelector('h1').textContent : 'Escala', el.innerHTML.replace(/ contenteditable="true"/g, ''), { html: true }, null); };
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  /* ---------- indicadores ---------- */
+  function telaIndicadores() {
+    C.innerHTML = titulo('Indicadores de Monitoramento', 'Anexo “B” à NI nº PM3-001/02/26 — cálculo mensal.') +
+      '<div class="cartao"><h2 style="margin-top:0">Indicador 01 — Taxa de ligações não efetuadas</h2><p class="desc">Quanto menor, melhor. Considere BOe com natureza A98 ou A99, vítima gênero “mulher” ou “Trans F”. Fonte: SIOPM e SICoordOp.</p><div class="grade">' +
+      campo(['i1a', 'BOe sem contato telefônico', 'number']) + campo(['i1b', 'Total de ocorrências VD contra a mulher', 'number']) + '<div><label>Resultado</label><input id="r1" readonly></div></div></div>' +
+      '<div class="cartao"><h2 style="margin-top:0">Indicador 02 — PM capacitados</h2><p class="desc">Quanto maior, melhor. Fonte: ferramenta de controle da DPCDH.</p><div class="grade">' +
+      campo(['i2a', 'PM capacitados na ativa', 'number']) + campo(['i2b', 'Efetivo existente', 'number']) + '<div><label>Resultado</label><input id="r2" readonly></div></div></div>' +
+      '<div class="cartao"><div class="grade">' + campo(['iMes', 'Mês de referência', 'month']) + '</div><div class="acoes"><button class="bt" data-acao="salvarInd">💾 Salvar no Drive</button></div></div><div class="relatorio"></div>';
+    var v = function (id) { return +document.getElementById('f_' + id).value || 0; };
+    var calc = function () {
+      document.getElementById('r1').value = v('i1b') ? (v('i1a') / v('i1b') * 100).toFixed(2) + ' %' : '';
+      document.getElementById('r2').value = v('i2b') ? (v('i2a') / v('i2b') * 100).toFixed(2) + ' %' : '';
+    };
+    [].forEach.call(C.querySelectorAll('input'), function (el) { el.addEventListener('input', calc); });
+    var rel = function () {
+      return cabecalho('Indicadores de Monitoramento — ' + esc(document.getElementById('f_iMes').value)) +
+        '<table><tr><th>Indicador 01 — Ligações não efetuadas</th><td>' + v('i1a') + ' / ' + v('i1b') + ' = <b>' + esc(document.getElementById('r1').value) + '</b></td></tr>' +
+        '<tr><th>Indicador 02 — PM capacitados</th><td>' + v('i2a') + ' / ' + v('i2b') + ' = <b>' + esc(document.getElementById('r2').value) + '</b></td></tr></table>';
+    };
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(rel()); };
+    C.querySelector('[data-acao=salvarInd]').onclick = function () { salvar('Indicadores', 'Indicadores ' + document.getElementById('f_iMes').value, rel(), { i1: [v('i1a'), v('i1b')], i2: [v('i2a'), v('i2b')] }, null); };
+  }
+
+  /* ---------- consulta ---------- */
+  function telaPop() {
+    var vd = ['Gravar toda a interação com a COP, quando disponível (POP 5.16.00).', 'Identificar a origem: SOS Mulher, SP Mulher Segura, Cabine Lilás, 190 ou Sinal Vermelho.',
+      'Atendimento por equipe capacitada, preferencialmente com ao menos uma policial feminina.', 'Localizar a vítima e resguardar prioritariamente sua integridade física.',
+      'Quem iniciar o atendimento segue até o fim — evita revitimização (art. 15-A da Lei 13.869/19).', 'Vítima sem vestes ou com vestes rasgadas: providenciar que seja coberta.',
+      'Avaliar estado físico e psíquico; havendo lesão, levar ao hospital ou acionar Bombeiros/SAMU.', 'Colher informações com solicitante/vítima e transmitir pela rede rádio.',
+      'Localizar o suspeito; constatada infração, conduzi-lo à área de segurança, de preferência fora do local.', 'Abordagem e busca pessoal (POP 1.01.05 e 1.01.06).',
+      'Algemas, se necessário, conforme POP 5.03.02.', 'Na prisão em flagrante, informar os direitos constitucionais (permanecer calado, advogado).',
+      'Conduzir as partes ao DP para registro.', 'Se não veio pelos apps, verificar se há MPU pedindo o documento judicial.',
+      'Qualificar infrator e vítima, arrolar testemunhas e pesquisar antecedentes.', 'Havendo MPU contra o agressor, conduzir as partes ao DP, independentemente de outros fatores de risco.',
+      'Sinal Vermelho: o funcionário da farmácia não é testemunha nem vai ao DP (salvo se presenciou o crime).'];
+    C.innerHTML = titulo('POP 2.09 — Passo a passo', 'Ocorrência de violência doméstica, descumprimento de MPU e crime sexual. Consulta rápida — siga sempre o POP vigente.') +
+      '<div class="cartao"><h2 style="margin-top:0">Material necessário</h2><p>Uniforme operacional (R-5-PM) · pistola .40 com 3 carregadores · equipamentos de menor potencial ofensivo · algemas com chave · PM O-58 · RSO · rádio/TPD · COP · relação de órgãos de apoio às vítimas.</p></div>' +
+      '<div class="cartao"><h2 style="margin-top:0">2.09.01 — Violência doméstica / descumprimento de MPU</h2><div class="alerta">Atividade crítica: certificar-se de que realmente se trata de violência doméstica e/ou descumprimento de Medida Protetiva.</div><ol class="passos">' + vd.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ol></div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+  function telaRede() {
+    var itens = [
+      ['🚨 190 — Polícia Militar', 'Emergência. Na Cabine Lilás (COPOM) policiais femininas orientam a mulher desde o acionamento.'],
+      ['📞 180 — Central de Atendimento à Mulher', 'Orientação e denúncia, 24 h, gratuito.'],
+      ['📱 App SP Mulher Segura', 'Registro de BO, rede de serviços e botão do pânico (quando há medida protetiva). Android e iOS.'],
+      ['📱 App SOS Mulher', 'Acionamento da PM pela vítima com medida protetiva.'],
+      ['🏛️ DDM / Sala DDM / DDM Online', 'Delegacias de Defesa da Mulher; todas as delegacias registram ocorrências. Sala DDM atende inclusive à noite, fins de semana e feriados.'],
+      ['💜 Sala Lilás (IML)', 'Atendimento pericial humanizado para vítimas de violência sexual e doméstica.'],
+      ['🏠 Casas Abrigo', 'Acolhimento da mulher e filhos menores de 18 anos em risco iminente.'],
+      ['💰 Auxílio-Aluguel', 'R$ 500/mês para mulheres com medida protetiva em vulnerabilidade social.'],
+      ['🍸 Protocolo Não Se Cale', 'Acolhimento em bares, restaurantes e casas de show; fiscalização pelo Procon-SP.'],
+      ['🚏 Abrigo Amigo', 'Painéis em pontos de ônibus que conectam a mulher a uma atendente em tempo real.'],
+      ['📍 Tornozeleira eletrônica', 'Fiscaliza o cumprimento de medidas protetivas pelo agressor, em tempo real.']];
+    C.innerHTML = titulo('Rede de apoio', 'Programas do movimento São Paulo Por Todas para orientar a vítima.') +
+      '<div class="atalhos">' + itens.map(function (i) { return '<a><b>' + esc(i[0]) + '</b><span>' + esc(i[1]) + '</span></a>'; }).join('') + '</div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  /* ---------- drive / registro / admin ---------- */
+  function telaDrive() {
+    C.innerHTML = titulo('Meus documentos', 'Tudo o que você salva fica no SEU Google Drive, na pasta “Patrulha Lilás”, separado por assunto e mês.') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
+    srv('listarArquivos').then(function (r) {
+      C.querySelector('.cartao').innerHTML = '<p><a class="bt sec" style="display:inline-flex;align-items:center;text-decoration:none" href="' + esc(r.pasta) + '" target="_blank" rel="noopener">📁 Abrir pasta no Google Drive</a></p>' +
+        (r.arquivos.length ? '<div class="rolar"><table class="tabela"><tr><th>Pasta</th><th>Arquivo</th></tr>' + r.arquivos.map(function (a) { return '<tr><td>' + esc(a.caminho) + '</td><td><a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.nome) + '</a></td></tr>'; }).join('') + '</table></div>' : '<p class="vazio">Nenhum documento salvo ainda.</p>');
+    }).catch(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+  function telaRegistro() {
+    C.innerHTML = titulo('Registro de edições', 'Histórico permanente: toda conta que salva ou altera algo fica registrada aqui. Todos podem ver; ninguém pode apagar.') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
+    srv('lerRegistro').then(function (r) {
+      C.querySelector('.cartao').innerHTML = '<p class="nao-imprimir">🔒 <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Ver planilha original (somente leitura)</a> · últimos 500 registros</p>' +
+        (r.linhas.length ? '<div class="rolar"><table class="tabela"><tr><th>Data/hora</th><th>Conta</th><th>Ação</th><th>Módulo</th><th>Descrição</th></tr>' +
+          r.linhas.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td>' + esc(l[1]) + '</td><td>' + esc(l[2]) + '</td><td>' + esc(l[3]) + '</td><td>' + (l[5] && /^https:\/\//.test(l[5]) ? '<a href="' + esc(l[5]) + '" target="_blank" rel="noopener">' + esc(l[4]) + '</a>' : esc(l[4])) + '</td></tr>'; }).join('') + '</table></div>' : '<p class="vazio">Nenhum registro ainda.</p>');
+    }).catch(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+  function telaAdmin() {
+    C.innerHTML = titulo('Administrador', 'Acesso restrito. Toda tentativa de login fica no registro.') +
+      '<div class="cartao" id="adm"><form id="fl"><div class="grade">' + campo(['senha', 'Senha do administrador', 'password']) + '</div><div class="acoes"><button class="bt">Entrar</button></div></form></div>';
+    var senha = '';
+    document.getElementById('fl').onsubmit = function (e) {
+      e.preventDefault(); senha = document.getElementById('f_senha').value;
+      srv('adminEntrar', senha, null).then(mostrar).catch(function (er) { aviso('❌ ' + esc(er)); });
+    };
+    function mostrar(r) {
+      var c = r.config || CONFIG;
+      document.getElementById('adm').innerHTML = '<h2 style="margin-top:0">Cabeçalho dos relatórios</h2><form id="fc"><div class="grade">' +
+        campo(['unidade', 'Linha 1 (instituição)', 'larga']) + campo(['subunidade', 'Linha 2 (unidade / programa)', 'larga']) + campo(['cidade', 'Cidade']) +
+        '</div><div class="acoes"><button class="bt">💾 Salvar configurações</button></div></form><div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema. A planilha original fica no Drive do dono, protegida.</div>';
+      ['unidade', 'subunidade', 'cidade'].forEach(function (k) { document.getElementById('f_' + k).value = c[k] || ''; });
+      document.getElementById('fc').onsubmit = function (e) {
+        e.preventDefault(); var n = { unidade: document.getElementById('f_unidade').value, subunidade: document.getElementById('f_subunidade').value, cidade: document.getElementById('f_cidade').value };
+        srv('adminEntrar', senha, n).then(function (r2) { CONFIG = r2.config || n; aplicaConfig(); aviso('✅ Configurações salvas.'); }).catch(function (er) { aviso('❌ ' + esc(er)); });
+      };
+    }
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  function telaInicio() {
+    var a = [['vd', '💜 Violência doméstica', 'Atendimento e descumprimento de MPU'], ['sexual', '🛡️ Crime sexual', 'Acolhimento sem revitimização'], ['ligacao', '📞 Ligação Mulher Segura', 'Roteiro com 14 perguntas'],
+      ['visita', '🏡 Visita', 'Relatório da visita presencial'], ['livro', '📒 Livro de registro', 'Ligações lançadas'], ['escala', '📅 Escala', 'Gerar e editar a escala'],
+      ['rede', '🤝 Rede de apoio', 'Para orientar a vítima'], ['drive', '📁 Meus documentos', 'Tudo salvo no seu Drive']];
+    C.innerHTML = '<h1>Olá' + (EMAIL ? ', ' + esc(EMAIL.split('@')[0]) : '') + ' 💜</h1><p class="desc">Escolha o que precisa fazer. Tudo pode ser impresso e salvo no seu Google Drive.</p>' +
+      (DEMO ? '<div class="dica">Modo demonstração: aberto fora do Google Apps Script — nada é salvo no Drive.</div>' : '') +
+      '<div class="atalhos">' + a.map(function (x) { return '<a href="#' + x[0] + '"><b>' + x[1] + '</b><span>' + x[2] + '</span></a>'; }).join('') + '</div>' +
+      '<div class="cartao" style="margin-top:16px"><b>Em perigo agora?</b> Acione o <b>190</b>. Orientação 24 h: <b>180</b>.</div>';
+  }
+
+  /* ---------- navegação ---------- */
+  var TELAS = { inicio: telaInicio, vd: function () { telaForm('vd'); }, sexual: function () { telaForm('sexual'); }, visita: function () { telaForm('visita'); }, ligacao: telaLigacao, livro: telaLivro, escala: telaEscala, indicadores: telaIndicadores, pop: telaPop, rede: telaRede, drive: telaDrive, registro: telaRegistro, admin: telaAdmin };
+  function navegar() {
+    var pg = (location.hash || '#inicio').slice(1); if (!TELAS[pg]) pg = 'inicio';
+    [].forEach.call(document.querySelectorAll('.menu a'), function (a) { a.classList.toggle('ativo', a.getAttribute('data-pg') === pg); });
+    document.getElementById('menu').classList.remove('aberto');
+    TELAS[pg](); C.focus(); window.scrollTo(0, 0);
+  }
+  function aplicaConfig() { document.getElementById('subUnidade').textContent = CONFIG.subunidade || ''; }
+  // No Apps Script o hash não muda a URL do topo; tratamos o clique manualmente.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[href^="#"]'); if (!a) return;
+    e.preventDefault(); try { history.replaceState(null, '', a.getAttribute('href')); } catch (x) { } navegar();
+  });
+  window.addEventListener('hashchange', navegar);
+  document.getElementById('btMenu').onclick = function () { document.getElementById('menu').classList.toggle('aberto'); };
+
+  navegar();
+  srv('iniciar').then(function (r) { EMAIL = r.email || ''; CONFIG = r.config || CONFIG; document.getElementById('usuario').textContent = EMAIL; aplicaConfig(); if ((location.hash || '#inicio') === '#inicio') telaInicio(); })
+    .catch(function (e) { aviso('❌ ' + esc(e)); });
+})();
+</script>
