@@ -28,7 +28,7 @@
       if (a[0] !== 'listar') { ef = ef.filter(function (p) { return p.re !== String(d.re).toUpperCase(); }); if (a[0] === 'add') ef.push({ grad: d.grad.toUpperCase(), re: String(d.re).toUpperCase(), qra: d.qra.toUpperCase(), cia: d.cia }); localStorage.setItem('demoEf', JSON.stringify(ef)); }
       return ef;
     }
-    if (fn === 'adminEntrar') { if (a[0] !== 'demo') throw new Error('Senha incorreta (no modo demonstração use: demo)'); return { config: CONFIG }; }
+    if (fn === 'adminEntrar') { if (a[0] !== 'demo') throw new Error('Senha incorreta (no modo demonstração use: demo)'); if (a[1]) Object.assign(CONFIG, a[1]); return { config: CONFIG }; }
     return {};
   }
 
@@ -40,7 +40,8 @@
   var timer;
   function aviso(html) { var a = document.getElementById('aviso'); a.innerHTML = html; a.classList.add('ver'); clearTimeout(timer); timer = setTimeout(function () { a.classList.remove('ver'); }, 5000); }
   function cabecalho(titulo) {
-    return '<div class="cab"><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc(CONFIG.subunidade) + '<h1>' + esc(titulo) + '</h1></div>';
+    var lg = function (i) { var u = logoUrl(i); return u ? '<img src="' + esc(u) + '" alt="">' : ''; };
+    return '<div class="cab">' + lg(0) + '<div><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc(CONFIG.subunidade) + '<h1>' + esc(titulo) + '</h1></div>' + lg(1) + '</div>';
   }
   function imprimir(htmlRelatorio) {
     var r = C.querySelector('.relatorio');
@@ -490,8 +491,24 @@
       var c = r.config || CONFIG;
       document.getElementById('adm').innerHTML = '<h2 style="margin-top:0">Cabeçalho dos relatórios</h2><form id="fc"><div class="grade">' +
         campo(['unidade', 'Linha 1 (instituição)', 'larga']) + campo(['subunidade', 'Linha 2 (unidade / programa)', 'larga']) + campo(['cidade', 'Cidade']) +
-        '</div><div class="acoes"><button class="bt">💾 Salvar configurações</button></div></form><div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema. A planilha original fica no Drive do dono, protegida.</div>';
+        '</div><div class="acoes"><button class="bt">💾 Salvar configurações</button></div></form>' +
+        '<h2>Logos (brasão PMESP e outro, ex.: batalhão ou programa)</h2><p class="desc">Aparecem pequenos no topo, nos relatórios impressos e bem clarinhos ao fundo. Use a imagem oficial em PNG com fundo transparente.</p><div class="grade">' +
+        [1, 2].map(function (n) { var u = logoUrl(n - 1); return '<div class="cartao" style="margin:0"><b>Logo ' + n + (n === 1 ? ' (esquerda)' : ' (direita)') + '</b><div style="height:70px;display:grid;place-items:center;margin:8px 0">' + (u ? '<img src="' + esc(u) + '" alt="" style="max-height:64px">' : '<span class="desc">sem logo</span>') + '</div><input type="file" accept="image/*" data-logo="' + n + '">' + (u ? '<button type="button" class="imprimir" style="margin-top:8px" data-tirar="' + n + '">remover</button>' : '') + '</div>'; }).join('') +
+        '</div><div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema. A planilha original fica no Drive do dono, protegida.</div>';
       ['unidade', 'subunidade', 'cidade'].forEach(function (k) { document.getElementById('f_' + k).value = c[k] || ''; });
+      var depois = function (r2) { CONFIG = r2.config || CONFIG; aplicaConfig(); mostrar(r2); aviso('✅ Logo atualizado.'); };
+      [].forEach.call(document.querySelectorAll('[data-logo]'), function (inp) {
+        inp.onchange = function () {
+          var f = inp.files[0]; if (!f) return;
+          if (f.size > 2 * 1024 * 1024) return aviso('Imagem muito grande (máx. 2 MB).');
+          var rd = new FileReader();
+          rd.onload = function () { aviso('Enviando…'); srv('adminEntrar', senha, null, { pos: +inp.getAttribute('data-logo'), mime: f.type, base64: String(rd.result).split(',')[1] }).then(depois).catch(function (er) { aviso('❌ ' + esc(er)); }); };
+          rd.readAsDataURL(f);
+        };
+      });
+      [].forEach.call(document.querySelectorAll('[data-tirar]'), function (b) {
+        b.onclick = function () { if (confirm('Remover este logo?')) srv('adminEntrar', senha, null, { pos: +b.getAttribute('data-tirar'), remover: true }).then(depois).catch(function (er) { aviso('❌ ' + esc(er)); }); };
+      });
       document.getElementById('fc').onsubmit = function (e) {
         e.preventDefault(); var n = { unidade: document.getElementById('f_unidade').value, subunidade: document.getElementById('f_subunidade').value, cidade: document.getElementById('f_cidade').value };
         srv('adminEntrar', senha, n).then(function (r2) { CONFIG = r2.config || n; aplicaConfig(); aviso('✅ Configurações salvas.'); }).catch(function (er) { aviso('❌ ' + esc(er)); });
@@ -518,7 +535,37 @@
     document.getElementById('menu').classList.remove('aberto');
     TELAS[pg](); C.focus(); window.scrollTo(0, 0);
   }
-  function aplicaConfig() { document.getElementById('subUnidade').textContent = CONFIG.subunidade || ''; }
+  function logoUrl(i) { var u = (CONFIG.logos || [])[i] || ''; return /^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+$/.test(u) ? u : ''; }
+  function aplicaConfig() {
+    document.getElementById('subUnidade').textContent = CONFIG.subunidade || '';
+    var l1 = logoUrl(0), l2 = logoUrl(1);
+    var img = function (id, u) { var el = document.getElementById(id); if (u) { el.src = u; el.hidden = false; } else { el.hidden = true; el.removeAttribute('src'); } };
+    img('logo1', l1); img('logo2', l2); img('marcaDagua', l1);
+    document.getElementById('brasaoPadrao').style.display = l1 ? 'none' : '';
+  }
+
+  /* ---------- aparência: claro/escuro e temas (fica salvo neste navegador) ---------- */
+  var TEMAS = [['lilas', 'Lilás', '#6b4fa0'], ['lavanda', 'Lavanda', '#8a7cc4'], ['ametista', 'Ametista', '#7b3f9e'], ['rosa', 'Rosa', '#b0577f'], ['malva', 'Malva', '#8e5d7a'],
+    ['azul', 'Azul PM', '#2f4f8f'], ['ceu', 'Céu', '#3d7ab8'], ['salvia', 'Sálvia', '#5b7f6a'], ['areia', 'Areia', '#9a7b52'], ['grafite', 'Grafite', '#555b66']];
+  function aplicaAparencia() {
+    var raiz = document.documentElement, tema = lerLocal('tema', 'lilas'), modo = lerLocal('modo', 'auto');
+    var escuro = modo === 'escuro' || (modo === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    raiz.setAttribute('data-tema', tema); raiz.setAttribute('data-modo', escuro ? 'escuro' : 'claro');
+    [].forEach.call(document.querySelectorAll('.modos button'), function (b) { b.classList.toggle('sel', b.getAttribute('data-modo') === modo); });
+    [].forEach.call(document.querySelectorAll('.cores button'), function (b) { b.classList.toggle('sel', b.getAttribute('data-tema') === tema); });
+  }
+  document.getElementById('cores').innerHTML = TEMAS.map(function (t) { return '<div><button type="button" data-tema="' + t[0] + '" style="background:' + t[2] + '" aria-label="Tema ' + t[1] + '"></button><span>' + t[1] + '</span></div>'; }).join('');
+  document.getElementById('btTema').onclick = function (e) { e.stopPropagation(); var p = document.getElementById('painelTema'); p.hidden = !p.hidden; };
+  document.getElementById('painelTema').onclick = function (e) {
+    e.stopPropagation();
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-modo')) gravarLocal('modo', b.getAttribute('data-modo'));
+    if (b.hasAttribute('data-tema')) gravarLocal('tema', b.getAttribute('data-tema'));
+    aplicaAparencia();
+  };
+  document.addEventListener('click', function () { document.getElementById('painelTema').hidden = true; });
+  if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', aplicaAparencia); } catch (e) { } }
+  aplicaAparencia();
   // No Apps Script o hash não muda a URL do topo; tratamos o clique manualmente.
   document.addEventListener('click', function (e) {
     var a = e.target.closest('a[href^="#"]'); if (!a) return;

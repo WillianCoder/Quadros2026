@@ -11,11 +11,21 @@
 <header class="topo">
   <button id="btMenu" class="bt-icone so-mobile" aria-label="Abrir menu">☰</button>
   <div class="marca">
-    <svg class="brasao" viewBox="0 0 64 72" aria-hidden="true"><path d="M32 2 60 12v22c0 18-12 30-28 36C16 64 4 52 4 34V12Z" fill="#6b4fa0"/><path d="M32 8 54 16v18c0 14-9 24-22 29C19 58 10 48 10 34V16Z" fill="#efe8fa"/><path d="m32 18 4.4 9 9.9 1.4-7.2 7 1.7 9.8L32 40.6l-8.8 4.6 1.7-9.8-7.2-7 9.9-1.4Z" fill="#b08fd8" stroke="#4b2e83" stroke-width="1.5"/></svg>
+    <img id="logo1" class="logo-pm" alt="Brasão" hidden>
+    <svg id="brasaoPadrao" class="brasao" viewBox="0 0 64 72" aria-hidden="true"><path d="M32 2 60 12v22c0 18-12 30-28 36C16 64 4 52 4 34V12Z" fill="#6b4fa0"/><path d="M32 8 54 16v18c0 14-9 24-22 29C19 58 10 48 10 34V16Z" fill="#efe8fa"/><path d="m32 18 4.4 9 9.9 1.4-7.2 7 1.7 9.8L32 40.6l-8.8 4.6 1.7-9.8-7.2-7 9.9-1.4Z" fill="#b08fd8" stroke="#4b2e83" stroke-width="1.5"/></svg>
     <div><strong>Patrulha Lilás</strong><small id="subUnidade">Polícia Militar · Proteção à Mulher</small></div>
   </div>
   <span id="usuario" class="usuario"></span>
+  <img id="logo2" class="logo-pm logo2" alt="" hidden>
+  <button id="btTema" class="bt-tema" type="button" aria-label="Aparência: claro, escuro e temas" title="Aparência">🎨</button>
+  <div id="painelTema" class="painel-tema" hidden>
+    <p>Aparência</p>
+    <div class="modos"><button type="button" data-modo="claro">☀️ Claro</button><button type="button" data-modo="escuro">🌙 Escuro</button><button type="button" data-modo="auto">Auto</button></div>
+    <p>Tema</p>
+    <div id="cores" class="cores"></div>
+  </div>
 </header>
+<img id="marcaDagua" class="marca-dagua" alt="" hidden>
 
 <nav id="menu" class="menu" aria-label="Menu principal">
   <p class="grupo">Início</p>

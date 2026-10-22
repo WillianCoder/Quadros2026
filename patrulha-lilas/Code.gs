@@ -81,8 +81,25 @@ function doPost(e) {
       sh.appendRow([agora, email, ok ? 'Login admin' : 'Tentativa de login admin (senha errada)', 'Admin', '', '']);
       if (!ok) throw new Error('Senha incorreta.');
       if (req.config) {
-        PROPS.setProperty('CONFIG', JSON.stringify(req.config).slice(0, 8000));
+        const c = lerConfig_();
+        ['unidade', 'subunidade', 'cidade'].forEach(k => { if (req.config[k] != null) c[k] = String(req.config[k]).slice(0, 200); });
+        PROPS.setProperty('CONFIG', JSON.stringify(c));
         sh.appendRow([agora, email, 'Alterou configurações', 'Admin', 'Cabeçalho/unidade', '']);
+      }
+      if (req.logo) {
+        const c = lerConfig_(), pos = req.logo.pos === 2 ? 1 : 0;
+        c.logos = c.logos || ['', ''];
+        if (req.logo.remover) c.logos[pos] = '';
+        else {
+          if (!/^image\/(png|jpeg|gif|webp|svg\+xml)$/.test(req.logo.mime || '')) throw new Error('Envie uma imagem PNG, JPG, GIF, WEBP ou SVG.');
+          const it = DriveApp.getRootFolder().getFoldersByName('Patrulha Lilás - Logos');
+          const pasta = it.hasNext() ? it.next() : DriveApp.getRootFolder().createFolder('Patrulha Lilás - Logos');
+          const f = pasta.createFile(Utilities.newBlob(Utilities.base64Decode(req.logo.base64), req.logo.mime, 'logo' + (pos + 1)));
+          f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          c.logos[pos] = 'https://lh3.googleusercontent.com/d/' + f.getId();
+        }
+        PROPS.setProperty('CONFIG', JSON.stringify(c));
+        sh.appendRow([agora, email, req.logo.remover ? 'Removeu logo ' + (pos + 1) : 'Enviou logo ' + (pos + 1), 'Admin', '', c.logos[pos]]);
       }
       r = { ok: true, config: lerConfig_() };
     } else if (req.acao === 'efetivo') {
@@ -203,7 +220,7 @@ function livro_() {
 function efetivo(op, dados) { return chamarRegistro_({ acao: 'efetivo', op: op, dados: dados || null }).lista; }
 function lerRegistro() { return chamarRegistro_({ acao: 'listar' }); }
 function registrarAcao(acao, modulo, descricao) { return chamarRegistro_({ acao: 'registrar', dados: { acao: acao, modulo: modulo, descricao: descricao } }); }
-function adminEntrar(senha, config) { return chamarRegistro_({ acao: 'admin', senha: senha, config: config || null }); }
+function adminEntrar(senha, config, logo) { return chamarRegistro_({ acao: 'admin', senha: senha, config: config || null, logo: logo || null }); }
 
 /* ============ AUXILIARES ============ */
 function pasta_(partes) {
@@ -213,7 +230,7 @@ function pasta_(partes) {
   return p;
 }
 function lerConfig_() {
-  const padrao = { unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo' };
+  const padrao = { unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo', logos: ['', ''] };
   try { return Object.assign(padrao, JSON.parse(PROPS.getProperty('CONFIG') || '{}')); } catch (e) { return padrao; }
 }
 function limpa_(s) { s = String(s == null ? '' : s).slice(0, 2000); return /^[=+\-@]/.test(s) ? "'" + s : s; } // evita fórmula na planilha
