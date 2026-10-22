@@ -22,7 +22,12 @@
     if (fn === 'salvarDocumento') { log('Criou documento', a[0], a[1]); return { url: '#', pasta: '#' }; }
     if (fn === 'lerRegistro') return { linhas: reg, url: '#' };
     if (fn === 'listarArquivos') return { pasta: '#', arquivos: reg.filter(function (r) { return r[2] === 'Criou documento'; }).map(function (r) { return { nome: r[4], url: '#', caminho: r[3] }; }) };
-    if (fn === 'lerLivro') return { url: '#', linhas: [] };
+    if (fn === 'lerLivro') return { url: '#', linhas: [['', '20/10/2026', '11 99999-0000', 'MARIA (TESTE)', 'A99', 'Atendida — contato realizado', 'Sim', '22/10/2026 10:00', '000000-0', 'SILVA', '21/10/2026 09:30', '2ª Cia', '']] };
+    if (fn === 'efetivo') {
+      var ef = JSON.parse(localStorage.getItem('demoEf') || '[]'), d = a[1] || {};
+      if (a[0] !== 'listar') { ef = ef.filter(function (p) { return p.re !== String(d.re).toUpperCase(); }); if (a[0] === 'add') ef.push({ grad: d.grad.toUpperCase(), re: String(d.re).toUpperCase(), qra: d.qra.toUpperCase(), cia: d.cia }); localStorage.setItem('demoEf', JSON.stringify(ef)); }
+      return ef;
+    }
     if (fn === 'adminEntrar') { if (a[0] !== 'demo') throw new Error('Senha incorreta (no modo demonstração use: demo)'); return { config: CONFIG }; }
     return {};
   }
@@ -130,13 +135,14 @@
     f.secoes.forEach(function (s, i) {
       h += '<div class="cartao"><h2 style="margin-top:0">' + esc(s[0]) + '</h2>';
       if (s[1] === 'checks') h += s[2].map(function (t, j) { return '<label class="check"><input type="checkbox" name="ck' + i + '_' + j + '"> ' + esc(t) + '</label>'; }).join('');
-      else h += '<div class="grade">' + s[1].map(campo).join('') + '</div>';
+      else h += '<div class="grade">' + s[1].map(campo).join('') + (s[1].some(function (c) { return c[0] === 'equipe'; }) ? seletorPM('selEquipe', '👮 Adicionar policial à equipe') : '') + '</div>';
       h += '</div>';
     });
     h += '<div class="acoes"><button class="bt" type="submit">💾 Salvar no Drive</button><button class="bt sec" type="button" data-acao="relatorio">🖨 Imprimir relatório</button><button class="bt sec" type="reset">Limpar</button></div></form></div><div class="relatorio"></div>';
     C.innerHTML = h;
     var form = document.getElementById('form');
     var gera = function () { return relatorioForm(f, form); };
+    ligarSeletores(function (p) { var eq = document.getElementById('f_equipe'); if (eq) eq.value = (eq.value ? eq.value + '; ' : '') + rotuloPM(p); });
     C.querySelector('[data-acao=relatorio]').onclick = function () { imprimir(gera()); };
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(gera()); };
     form.onsubmit = function (e) {
@@ -163,6 +169,72 @@
     }).catch(function (e) { aviso('❌ ' + esc(e)); }).then(function () { if (bt) { bt.disabled = false; bt.textContent = '💾 Salvar no Drive'; } });
   }
 
+  /* ---------- efetivo (policiais cadastrados) ---------- */
+  var EFETIVO = null;
+  function carregarEfetivo() {
+    return srv('efetivo', 'listar', null).then(function (l) { EFETIVO = l || []; return EFETIVO; });
+  }
+  function rotuloPM(p) { return [p.grad, p.re, p.qra].filter(Boolean).join(' '); }
+  /** Seletor de policial agrupado por Cia. Ao escolher, chama fn(policial). */
+  function seletorPM(id, texto) {
+    return '<div class="nao-imprimir"><label for="' + id + '">' + esc(texto || '👮 Escolher do efetivo') + '</label><select id="' + id + '" data-seletor-pm><option value="">Carregando…</option></select></div>';
+  }
+  function ligarSeletores(fn) {
+    var sels = C.querySelectorAll('[data-seletor-pm]');
+    if (!sels.length) return;
+    (EFETIVO ? Promise.resolve(EFETIVO) : carregarEfetivo()).then(function (lista) {
+      var grupos = {};
+      lista.forEach(function (p, i) { (grupos[p.cia || 'Sem Cia'] = grupos[p.cia || 'Sem Cia'] || []).push('<option value="' + i + '">' + esc(rotuloPM(p)) + '</option>'); });
+      var html = '<option value="">' + (lista.length ? 'Selecione…' : 'Nenhum policial cadastrado (menu Efetivo)') + '</option>' +
+        Object.keys(grupos).sort().map(function (g) { return '<optgroup label="' + esc(g) + '">' + grupos[g].join('') + '</optgroup>'; }).join('');
+      [].forEach.call(sels, function (sel) {
+        sel.innerHTML = html;
+        sel.onchange = function () { if (sel.value !== '') { fn(lista[+sel.value], sel); sel.value = ''; } };
+      });
+    }).catch(function (e) { [].forEach.call(sels, function (sel) { sel.innerHTML = '<option>Erro ao carregar efetivo</option>'; }); });
+  }
+  function telaEfetivo() {
+    C.innerHTML = titulo('Efetivo', 'Policiais cadastrados aparecem para seleção nos formulários e na escala. Todos usam a mesma lista; cada inclusão ou exclusão fica no registro.') +
+      '<div class="cartao nao-imprimir"><h2 style="margin-top:0">Adicionar / alterar policial</h2><form id="fe"><div class="grade">' +
+      campo(['pGrad', 'Graduação', ['SD', 'CB', '3º SGT', '2º SGT', '1º SGT', 'SUBTEN', 'ASP OF', '2º TEN', '1º TEN', 'CAP', 'MAJ', 'TEN CEL', 'CEL']]) +
+      campo(['pRe', 'RE']) + campo(['pQra', 'QRA (nome de guerra)']) + campo(['pCia', 'Cia']) +
+      '</div><p class="desc" style="margin:8px 0 0">Se o RE já existir, os dados são atualizados.</p><div class="acoes"><button class="bt">+ Adicionar</button></div></form></div>' +
+      '<div class="cartao tela"><div class="grade nao-imprimir" style="margin-bottom:12px">' + campo(['pFiltro', 'Filtrar por Cia ou nome']) + '</div><div id="listaEf"><p class="vazio">Carregando…</p></div></div><div class="relatorio"></div>';
+    var cias = '';
+    function desenhar() {
+      var f = (document.getElementById('f_pFiltro').value || '').toLowerCase();
+      var l = (EFETIVO || []).filter(function (p) { return !f || (rotuloPM(p) + ' ' + p.cia).toLowerCase().indexOf(f) >= 0; });
+      document.getElementById('listaEf').innerHTML = l.length ? '<div class="rolar"><table class="tabela"><tr><th>Cia</th><th>Grad.</th><th>RE</th><th>QRA</th><th class="nao-imprimir"></th></tr>' +
+        l.map(function (p) { return '<tr><td>' + esc(p.cia) + '</td><td>' + esc(p.grad) + '</td><td>' + esc(p.re) + '</td><td>' + esc(p.qra) + '</td><td class="nao-imprimir" style="width:1%;white-space:nowrap"><button class="imprimir" data-ed="' + esc(p.re) + '">editar</button> <button class="imprimir" data-del="' + esc(p.re) + '">🗑 apagar</button></td></tr>'; }).join('') +
+        '</table></div><p class="desc" style="margin-top:8px">' + l.length + ' policial(is)</p>' : '<p class="vazio">Nenhum policial cadastrado ainda.</p>';
+    }
+    function atualizar(op, dados) {
+      return srv('efetivo', op, dados).then(function (l) { EFETIVO = l || []; desenhar(); }).catch(function (e) { aviso('❌ ' + esc(e)); });
+    }
+    carregarEfetivo().then(desenhar).catch(function (e) { document.getElementById('listaEf').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    document.getElementById('f_pFiltro').addEventListener('input', desenhar);
+    document.getElementById('fe').onsubmit = function (e) {
+      e.preventDefault();
+      var v = function (k) { return document.getElementById('f_' + k).value.trim(); };
+      if (!v('pRe') || !v('pQra')) return aviso('Preencha RE e QRA.');
+      var bt = this.querySelector('button'); bt.disabled = true;
+      atualizar('add', { grad: v('pGrad'), re: v('pRe'), qra: v('pQra'), cia: v('pCia') }).then(function () {
+        aviso('✅ Policial salvo.'); bt.disabled = false;
+        document.getElementById('f_pRe').value = ''; document.getElementById('f_pQra').value = ''; document.getElementById('f_pRe').focus();
+      });
+    };
+    document.getElementById('listaEf').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var re = b.getAttribute('data-del') || b.getAttribute('data-ed');
+      var p = (EFETIVO || []).filter(function (x) { return x.re === re; })[0]; if (!p) return;
+      if (b.hasAttribute('data-ed')) {
+        document.getElementById('f_pGrad').value = p.grad; document.getElementById('f_pRe').value = p.re;
+        document.getElementById('f_pQra').value = p.qra; document.getElementById('f_pCia').value = p.cia; window.scrollTo(0, 0);
+      } else if (confirm('Apagar ' + rotuloPM(p) + ' do efetivo?')) atualizar('del', { re: re, grad: p.grad, qra: p.qra, cia: p.cia }).then(function () { aviso('Policial apagado.'); });
+    });
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(cabecalho('Efetivo cadastrado') + document.getElementById('listaEf').innerHTML); };
+  }
+
   /* ---------- roteiro da ligação ---------- */
   var PERGUNTAS = [
     'Bom dia/boa tarde. Eu poderia falar com a senhora [nome da mulher]?',
@@ -186,7 +258,7 @@
     var h = titulo('Roteiro de Contato Telefônico', 'Programa Mulher Segura — registre as respostas durante a ligação. Ao salvar, a linha entra automaticamente no Livro de Registro.') +
       '<div class="tela"><form id="form"><div class="cartao"><div class="grade">' +
       nome('data', 'Data', 'date') + nome('hora', 'Horário', 'time') + nome('nome', 'Nome da mulher') + nome('telefone', 'Telefone') + nome('prot', 'Protocolo') + nome('bo', 'Nº ocorrência / BOe') +
-      nome('dataBo', 'Data da ocorrência', 'date') + nome('natureza', 'Natureza') + nome('policial', 'Policial responsável (grad. e nome)') + nome('re', 'RE') + nome('qra', 'QRA') + nome('unidade', 'Unidade') +
+      nome('dataBo', 'Data da ocorrência', 'date') + nome('natureza', 'Natureza') + seletorPM('selPol', '👮 Policial que está ligando') + nome('policial', 'Policial responsável (grad. e nome)') + nome('re', 'RE') + nome('qra', 'QRA') + nome('unidade', 'Unidade') +
       '</div></div><div class="alerta">Se ela disser que corre perigo agora (pergunta 7): encerre o roteiro e acione o 190 imediatamente.</div><div class="cartao">' +
       PERGUNTAS.map(function (p, i) {
         return '<div class="pergunta"><p>' + (i + 1) + '. ' + esc(p) + '</p>' + (ABERTAS[i] ? '' :
@@ -208,6 +280,10 @@
         '</table><div class="ass">______________________________________<br>' + esc(d.policial || 'Policial responsável') + '</div>';
       return r;
     };
+    ligarSeletores(function (p) {
+      var put = function (k, v) { document.getElementById('f_' + k).value = v || ''; };
+      put('policial', [p.grad, p.qra].filter(Boolean).join(' ')); put('re', p.re); put('qra', p.qra); if (p.cia) put('unidade', p.cia);
+    });
     C.querySelector('[data-acao=relatorio]').onclick = C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(gera()); };
     form.onsubmit = function (e) {
       e.preventDefault(); var d = dadosForm(form);
@@ -219,15 +295,36 @@
   /* ---------- livro de registro ---------- */
   var COL_LIVRO = ['PROT', 'DATA', 'TELEFONE', 'NOME DA VÍTIMA', 'NATUREZA', 'RESULTADO', 'ACEITA VISITA', 'DATA/HORA VISITA', 'RE', 'QRA', 'DATA/HORA LIGAÇÃO', 'UNIDADE', 'ASSINATURA'];
   function telaLivro() {
-    C.innerHTML = titulo('Livro de Registro', 'Ligações do Programa Mulher Segura lançadas por você (planilha no seu Drive).') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
-    srv('lerLivro').then(function (r) {
-      var linhas = r.linhas.length ? r.linhas : [];
-      while (linhas.length < 15) linhas.push(COL_LIVRO.map(function () { return ''; }));
-      C.querySelector('.cartao').outerHTML = '<div class="cartao"><p class="tela nao-imprimir"><a href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir pasta do livro no Drive</a></p><div class="cab relatorio" style="display:none"></div>' +
-        '<div class="rolar"><table class="tabela"><tr>' + COL_LIVRO.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>' +
-        linhas.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + esc(v) + '&nbsp;</td>'; }).join('') + '</tr>'; }).join('') + '</table></div></div>';
-    }).catch(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
-    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+    C.innerHTML = titulo('Livro de Registro', 'Preenchido automaticamente a cada ligação salva no Roteiro. A impressão sai só com as linhas que têm dados.') +
+      '<div class="cartao nao-imprimir"><div class="grade">' + campo(['lMes', 'Mês (deixe vazio para todos)', 'month']) + campo(['lBusca', 'Buscar (nome, RE, Cia…)']) + '</div></div>' +
+      '<div class="cartao tela"><p class="vazio">Carregando…</p></div><div class="relatorio"></div>';
+    var todas = [], url = '#';
+    function filtradas() {
+      var m = document.getElementById('f_lMes').value, b = document.getElementById('f_lBusca').value.toLowerCase();
+      var mm = m ? '/' + m.slice(5, 7) + '/' + m.slice(0, 4) : '';
+      return todas.filter(function (l) {
+        if (!l.some(function (v) { return String(v).trim(); })) return false; // ignora linha vazia
+        if (mm && (l[10] + ' ' + l[1]).indexOf(mm) < 0) return false;
+        return !b || l.join(' ').toLowerCase().indexOf(b) >= 0;
+      });
+    }
+    function tabela(ls) {
+      return '<div class="rolar"><table class="tabela"><tr>' + COL_LIVRO.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>' +
+        ls.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>';
+    }
+    function desenhar() {
+      var ls = filtradas();
+      C.querySelectorAll('.cartao')[1].innerHTML = '<p class="nao-imprimir"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir pasta do livro no Drive</a> · ' + ls.length + ' registro(s)</p>' +
+        (ls.length ? tabela(ls) : '<p class="vazio">Nenhuma ligação encontrada. Salve uma ligação no “Roteiro da ligação” e ela aparece aqui.</p>');
+    }
+    srv('lerLivro').then(function (r) { todas = r.linhas || []; url = r.url; desenhar(); })
+      .catch(function (e) { C.querySelectorAll('.cartao')[1].innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    C.querySelector('.cartao').addEventListener('input', desenhar);
+    C.querySelector('[data-acao=imprimir]').onclick = function () {
+      var ls = filtradas(), m = document.getElementById('f_lMes').value;
+      if (!ls.length) return aviso('Não há registros para imprimir.');
+      imprimir('<style>@page{size:landscape}</style>' + cabecalho('Livro de Registro — Programa Mulher Segura' + (m ? ' — ' + m.slice(5, 7) + '/' + m.slice(0, 4) : '')) + tabela(ls));
+    };
   }
 
   /* ---------- gerador de escala ---------- */
@@ -240,7 +337,9 @@
       '<div class="tela cartao nao-imprimir"><div class="grade">' +
       campo(['eTitulo', 'Título', 'larga']) + campo(['eInicio', 'Data de início', 'date']) + campo(['eDias', 'Quantidade de dias', 'number']) + campo(['ePorVtr', 'PMs por viatura', 'number']) +
       campo(['eVtr', 'Viaturas / Cias (separe por vírgula)', 'larga']) + campo(['eHor', 'Horários (separe por vírgula; um por viatura, ou um para todas)', 'larga']) +
-      campo(['eEfetivo', 'Efetivo — um por linha: GRAD; RE; NOME', 'texto']) +
+      '<div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div style="flex:1;min-width:200px"><label for="f_eCia">Puxar policiais do Efetivo cadastrado</label><select id="f_eCia"><option value="">Todas as Cias</option></select></div>' +
+      '<button type="button" class="bt sec" data-acao="puxar">👮 Puxar todos</button></div>' + seletorPM('selEsc', '…ou adicionar um policial') +
+      campo(['eEfetivo', 'Efetivo da escala — um por linha: GRAD; RE; QRA (pode editar)', 'texto']) +
       '</div><div class="acoes"><button class="bt" data-acao="gerar">⚡ Gerar escala</button><button class="bt sec" data-acao="linha">+ Linha</button><button class="bt sec" data-acao="salvarEscala">💾 Salvar no Drive</button></div></div>' +
       '<div id="escala" class="cartao"></div>';
     var g = function (id) { return document.getElementById('f_' + id); };
@@ -250,6 +349,19 @@
     g('eHor').value = lerLocal('eHor', '04h45 às 12h45, 10h00 às 22h00, 14h00 às 22h00');
     g('eEfetivo').value = lerLocal('eEfetivo', 'SD; 000000-0; NOME DO POLICIAL\nCB; 000000-0; NOME DO POLICIAL');
     g('eEfetivo').style.minHeight = '160px';
+    var linhaPM = function (p) { return [p.grad, p.re, p.qra].join('; '); };
+    var addLinhas = function (ls) { var t = g('eEfetivo'), atual = t.value.trim(); ls = ls.filter(function (l) { return atual.indexOf(l) < 0; }); t.value = (atual ? atual + '\n' : '') + ls.join('\n'); };
+    ligarSeletores(function (p) { addLinhas([linhaPM(p)]); });
+    (EFETIVO ? Promise.resolve(EFETIVO) : carregarEfetivo()).then(function (l) {
+      var cs = {}; l.forEach(function (p) { if (p.cia) cs[p.cia] = 1; });
+      g('eCia').innerHTML += Object.keys(cs).sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    }).catch(function () { });
+    C.querySelector('[data-acao=puxar]').onclick = function () {
+      var c = g('eCia').value, l = (EFETIVO || []).filter(function (p) { return !c || p.cia === c; });
+      if (!l.length) return aviso('Nenhum policial cadastrado' + (c ? ' na ' + esc(c) : '') + '. Cadastre no menu Efetivo.');
+      if (/000000-0/.test(g('eEfetivo').value)) g('eEfetivo').value = '';
+      addLinhas(l.map(linhaPM)); aviso(l.length + ' policial(is) na lista. Clique em Gerar escala.');
+    };
     var salvo = lerLocal('escalaHtml', ''); if (salvo) document.getElementById('escala').innerHTML = salvo; else gerar();
 
     function gerar() {
@@ -390,7 +502,7 @@
 
   function telaInicio() {
     var a = [['vd', '💜 Violência doméstica', 'Atendimento e descumprimento de MPU'], ['sexual', '🛡️ Crime sexual', 'Acolhimento sem revitimização'], ['ligacao', '📞 Ligação Mulher Segura', 'Roteiro com 14 perguntas'],
-      ['visita', '🏡 Visita', 'Relatório da visita presencial'], ['livro', '📒 Livro de registro', 'Ligações lançadas'], ['escala', '📅 Escala', 'Gerar e editar a escala'],
+      ['visita', '🏡 Visita', 'Relatório da visita presencial'], ['livro', '📒 Livro de registro', 'Ligações lançadas'], ['escala', '📅 Escala', 'Gerar e editar a escala'], ['efetivo', '👮 Efetivo', 'Policiais, RE, QRA e Cia'],
       ['rede', '🤝 Rede de apoio', 'Para orientar a vítima'], ['drive', '📁 Meus documentos', 'Tudo salvo no seu Drive']];
     C.innerHTML = '<h1>Olá' + (EMAIL ? ', ' + esc(EMAIL.split('@')[0]) : '') + ' 💜</h1><p class="desc">Escolha o que precisa fazer. Tudo pode ser impresso e salvo no seu Google Drive.</p>' +
       (DEMO ? '<div class="dica">Modo demonstração: aberto fora do Google Apps Script — nada é salvo no Drive.</div>' : '') +
@@ -399,7 +511,7 @@
   }
 
   /* ---------- navegação ---------- */
-  var TELAS = { inicio: telaInicio, vd: function () { telaForm('vd'); }, sexual: function () { telaForm('sexual'); }, visita: function () { telaForm('visita'); }, ligacao: telaLigacao, livro: telaLivro, escala: telaEscala, indicadores: telaIndicadores, pop: telaPop, rede: telaRede, drive: telaDrive, registro: telaRegistro, admin: telaAdmin };
+  var TELAS = { inicio: telaInicio, vd: function () { telaForm('vd'); }, sexual: function () { telaForm('sexual'); }, visita: function () { telaForm('visita'); }, ligacao: telaLigacao, livro: telaLivro, efetivo: telaEfetivo, escala: telaEscala, indicadores: telaIndicadores, pop: telaPop, rede: telaRede, drive: telaDrive, registro: telaRegistro, admin: telaAdmin };
   function navegar() {
     var pg = (location.hash || '#inicio').slice(1); if (!TELAS[pg]) pg = 'inicio';
     [].forEach.call(document.querySelectorAll('.menu a'), function (a) { a.classList.toggle('ativo', a.getAttribute('data-pg') === pg); });

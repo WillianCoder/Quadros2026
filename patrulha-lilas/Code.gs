@@ -85,6 +85,22 @@ function doPost(e) {
         sh.appendRow([agora, email, 'Alterou configurações', 'Admin', 'Cabeçalho/unidade', '']);
       }
       r = { ok: true, config: lerConfig_() };
+    } else if (req.acao === 'efetivo') {
+      const ef = abaEfetivo_();
+      const p = req.dados || {};
+      if (req.op === 'add' || req.op === 'del') {
+        const re = limpa_(p.re).trim().toUpperCase();
+        if (!re) throw new Error('Informe o RE.');
+        const vals = ef.getDataRange().getDisplayValues();
+        for (let i = vals.length - 1; i >= 1; i--) if (String(vals[i][1]).toUpperCase() === re) ef.deleteRow(i + 1);
+        if (req.op === 'add') {
+          if (!String(p.qra || '').trim()) throw new Error('Informe o QRA.');
+          ef.appendRow([limpa_(p.grad).toUpperCase(), re, limpa_(p.qra).toUpperCase(), limpa_(p.cia)]);
+        }
+        sh.appendRow([agora, email, req.op === 'add' ? 'Cadastrou/alterou policial' : 'Apagou policial do efetivo', 'Efetivo',
+          [p.grad, re, p.qra, p.cia].filter(String).join(' '), '']);
+      }
+      r = { ok: true, lista: lerEfetivo_(ef) };
     } else throw new Error('Ação inválida.');
   } catch (err) { r = { ok: false, erro: String(err.message || err) }; }
   return ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
@@ -96,6 +112,27 @@ function emailDoToken_(token) {
   if (res.getResponseCode() !== 200) return '';
   const j = JSON.parse(res.getContentText());
   return j.email_verified === 'true' || j.email_verified === true ? j.email : '';
+}
+
+/** Aba "Efetivo" na planilha do dono: lista de policiais usada nos seletores. */
+function abaEfetivo_() {
+  const ss = SpreadsheetApp.openById(PROPS.getProperty('LOG_ID'));
+  let ef = ss.getSheetByName('Efetivo');
+  if (!ef) {
+    ef = ss.insertSheet('Efetivo');
+    ef.appendRow(['GRAD', 'RE', 'QRA', 'CIA']);
+    ef.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#6b4fa0').setFontColor('#ffffff');
+    ef.setFrozenRows(1);
+    const p = ef.protect().setDescription('Efetivo: alterar só pelo sistema');
+    p.removeEditors(p.getEditors()); if (p.canDomainEdit()) p.setDomainEdit(false);
+  }
+  return ef;
+}
+function lerEfetivo_(ef) {
+  const n = ef.getLastRow();
+  if (n < 2) return [];
+  return ef.getRange(2, 1, n - 1, 4).getDisplayValues().map(l => ({ grad: l[0], re: l[1], qra: l[2], cia: l[3] }))
+    .sort((a, b) => (a.cia + a.qra).localeCompare(b.cia + b.qra, 'pt'));
 }
 
 /* ============ FUNÇÕES CHAMADAS PELA TELA (rodam como o USUÁRIO) ============ */
@@ -163,6 +200,7 @@ function livro_() {
   return ss.getSheets()[0];
 }
 
+function efetivo(op, dados) { return chamarRegistro_({ acao: 'efetivo', op: op, dados: dados || null }).lista; }
 function lerRegistro() { return chamarRegistro_({ acao: 'listar' }); }
 function registrarAcao(acao, modulo, descricao) { return chamarRegistro_({ acao: 'registrar', dados: { acao: acao, modulo: modulo, descricao: descricao } }); }
 function adminEntrar(senha, config) { return chamarRegistro_({ acao: 'admin', senha: senha, config: config || null }); }
