@@ -40,8 +40,7 @@
   var timer;
   function aviso(html) { var a = document.getElementById('aviso'); a.innerHTML = html; a.classList.add('ver'); clearTimeout(timer); timer = setTimeout(function () { a.classList.remove('ver'); }, 5000); }
   function cabecalho(titulo) {
-    var lg = function (i) { var u = logoUrl(i); return u ? '<img src="' + esc(u) + '" alt="">' : ''; };
-    return '<div class="cab">' + lg(0) + '<div><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc(CONFIG.subunidade) + '<h1>' + esc(titulo) + '</h1></div>' + lg(1) + '</div>';
+    return '<div class="cab"><div><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc([CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ')) + '<h1>' + esc(titulo) + '</h1></div></div>';
   }
   function imprimir(htmlRelatorio) {
     var r = C.querySelector('.relatorio');
@@ -73,7 +72,6 @@
         ['Providências (POP 2.09.01)', 'checks', [
           'Interação gravada em COP (quando disponível)',
           'Vítima localizada e integridade física resguardada',
-          'Policial que iniciou o atendimento seguiu até o fim (evitar revitimização)',
           'Vítima coberta/preservada se sem vestes ou vestes rasgadas',
           'Estado físico e psíquico avaliado; atendimento médico providenciado se necessário',
           'Informações transmitidas pela rede rádio',
@@ -83,8 +81,7 @@
           'Direitos constitucionais informados ao preso',
           'Verificado documento da MPU (se não acionado por app)',
           'Partes qualificadas, testemunhas arroladas e antecedentes pesquisados',
-          'Vítima orientada sobre SOS Mulher, SP Mulher Segura e rede de apoio',
-          'Funcionário de farmácia (Sinal Vermelho) NÃO arrolado como testemunha']],
+          'Vítima orientada sobre SOS Mulher, SP Mulher Segura e rede de apoio']],
         ['Encaminhamento', [['dp', 'Distrito Policial / DDM'], ['resultado', 'Resultado', ['', 'Prisão em flagrante', 'Registro de BO sem prisão', 'Autor evadido — buscas', 'Orientação às partes', 'Outro']], ['obs', 'Observações', 'texto']]]
       ]
     },
@@ -259,9 +256,10 @@
     var h = titulo('Roteiro de Contato Telefônico', 'Programa Mulher Segura — registre as respostas durante a ligação. Ao salvar, a linha entra automaticamente no Livro de Registro.') +
       '<div class="tela"><form id="form"><div class="cartao"><div class="grade">' +
       nome('data', 'Data', 'date') + nome('hora', 'Horário', 'time') + nome('nome', 'Nome da mulher') + nome('telefone', 'Telefone') + nome('prot', 'Protocolo') + nome('bo', 'Nº ocorrência / BOe') +
-      nome('dataBo', 'Data da ocorrência', 'date') + nome('natureza', 'Natureza') + seletorPM('selPol', '👮 Policial que está ligando') + nome('policial', 'Policial responsável (grad. e nome)') + nome('re', 'RE') + nome('qra', 'QRA') + nome('unidade', 'Unidade') +
+      nome('dataBo', 'Data da ocorrência', 'date') + campo(['natureza', 'Natureza', ['', 'A98', 'A99', 'Outra']]) + seletorPM('selPol', '👮 Policial que está ligando') + nome('policial', 'Policial responsável (grad. e nome)') + nome('re', 'RE') + nome('qra', 'QRA') + nome('unidade', 'Unidade') +
       '</div></div><div class="alerta">Se ela disser que corre perigo agora (pergunta 7): encerre o roteiro e acione o 190 imediatamente.</div><div class="cartao">' +
       PERGUNTAS.map(function (p, i) {
+        if (i === 9) return '<div class="pergunta"><p>10. ' + esc(p) + '</p><div class="opcoes">' + ['Bem', 'Abalada', 'Com medo', 'Com lesões', 'Não respondeu'].map(function (o) { return '<label><input type="radio" name="p9" value="' + o + '"> ' + o + '</label>'; }).join('') + '</div><input name="o9" placeholder="Observação" style="margin-top:6px"></div>';
         return '<div class="pergunta"><p>' + (i + 1) + '. ' + esc(p) + '</p>' + (ABERTAS[i] ? '' :
           '<div class="opcoes">' + ['Sim', 'Não', 'Não respondeu'].map(function (o) { return '<label><input type="radio" name="p' + i + '" value="' + o + '"> ' + o + '</label>'; }).join('') + '</div>') +
           (i >= 6 ? '<input name="o' + i + '" placeholder="Observação" style="margin-top:6px">' : '') + '</div>';
