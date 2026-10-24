@@ -19,10 +19,20 @@
     var reg = JSON.parse(localStorage.getItem('demoReg') || '[]');
     var log = function (acao, mod, d) { reg.unshift([new Date().toLocaleString('pt-BR'), 'demonstracao@local', acao, mod, d, '']); localStorage.setItem('demoReg', JSON.stringify(reg)); };
     if (fn === 'iniciar') return { email: 'modo demonstração', config: CONFIG, pasta: '#' };
-    if (fn === 'salvarDocumento') { log('Criou documento', a[0], a[1]); return { url: '#', pasta: '#' }; }
+    if (fn === 'salvarDocumento') {
+      var n = (+localStorage.getItem('demoProt') || 0) + 1; localStorage.setItem('demoProt', n); var prot = ('0000' + n).slice(-5);
+      var oc = JSON.parse(localStorage.getItem('demoOc') || '[]'), lv = (a[3] && a[3].livro) || {}; lv.prot = prot;
+      if (a[3] && a[3].livro) oc.push({ prot: prot, data: lv.data || '', tipo: a[0], nome: lv.nome || '', no: a[0] === 'Ligações Mulher Segura', lv: lv });
+      localStorage.setItem('demoOc', JSON.stringify(oc)); log('Criou documento', a[0], 'Prot ' + prot + ' - ' + a[1]); return { url: '#', pasta: '#', prot: prot };
+    }
+    if (fn === 'livroEnviar') { var o2 = JSON.parse(localStorage.getItem('demoOc') || '[]'); o2.forEach(function (o) { if (a[0].indexOf(o.prot) >= 0) o.no = true; }); localStorage.setItem('demoOc', JSON.stringify(o2)); fn = 'lerLivro'; }
     if (fn === 'lerRegistro') return { linhas: reg, url: '#' };
     if (fn === 'listarArquivos') return { pasta: '#', arquivos: reg.filter(function (r) { return r[2] === 'Criou documento'; }).map(function (r) { return { nome: r[4], url: '#', caminho: r[3] }; }) };
-    if (fn === 'lerLivro') return { url: '#', linhas: [['', '20/10/2026', '11 99999-0000', 'MARIA (TESTE)', 'A99', 'Atendida — contato realizado', 'Sim', '22/10/2026 10:00', '000000-0', 'SILVA', '21/10/2026 09:30', '2ª Cia', '']] };
+    if (fn === 'lerLivro') {
+      var o3 = JSON.parse(localStorage.getItem('demoOc') || '[]'), C13 = ['prot', 'data', 'telefone', 'nome', 'natureza', 'resultado', 'aceitaVisita', 'dataVisita', 're', 'qra', 'dataHora', 'unidade'];
+      return { url: '#', linhas: o3.filter(function (o) { return o.no; }).map(function (o) { return C13.map(function (k) { return o.lv[k] || ''; }).concat(['']); }),
+        pendentes: o3.filter(function (o) { return !o.no; }).reverse().map(function (o) { return [o.prot, o.data, o.tipo, o.nome]; }) };
+    }
     if (fn === 'efetivo') {
       var ef = JSON.parse(localStorage.getItem('demoEf') || '[]'), d = a[1] || {};
       if (a[0] !== 'listar') { ef = ef.filter(function (p) { return p.re !== String(d.re).toUpperCase(); }); if (a[0] === 'add') ef.push({ grad: d.grad.toUpperCase(), re: String(d.re).toUpperCase(), qra: d.qra.toUpperCase(), cia: d.cia }); localStorage.setItem('demoEf', JSON.stringify(ef)); }
@@ -39,11 +49,12 @@
   function dataBR(s) { if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return s || ''; var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
   var timer;
   function aviso(html) { var a = document.getElementById('aviso'); a.innerHTML = html; a.classList.add('ver'); clearTimeout(timer); timer = setTimeout(function () { a.classList.remove('ver'); }, 5000); }
-  function cabecalho(titulo) {
-    return '<div class="cab"><div><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc([CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ')) + '<h1>' + esc(titulo) + '</h1></div></div>';
+  function cabecalho(titulo, comProt) {
+    return '<div class="cab"><div><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc([CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ')) + '<h1>' + esc(titulo) + '</h1>' + (comProt ? '<p style="margin:4px 0 0"><b>Protocolo nº %%PROT%%</b></p>' : '') + '</div></div>';
   }
   function imprimir(htmlRelatorio) {
     var r = C.querySelector('.relatorio');
+    if (htmlRelatorio) htmlRelatorio = htmlRelatorio.split('%%PROT%%').join(C.getAttribute('data-prot') || '_______ (gerado ao salvar)');
     if (htmlRelatorio && r) { r.innerHTML = htmlRelatorio; document.body.classList.add('modo-relatorio'); }
     window.print();
     document.body.classList.remove('modo-relatorio');
@@ -140,18 +151,23 @@
     C.innerHTML = h;
     var form = document.getElementById('form');
     var gera = function () { return relatorioForm(f, form); };
-    ligarSeletores(function (p) { var eq = document.getElementById('f_equipe'); if (eq) eq.value = (eq.value ? eq.value + '; ' : '') + rotuloPM(p); });
+    var pm1 = null;
+    ligarSeletores(function (p) { pm1 = pm1 || p; var eq = document.getElementById('f_equipe'); if (eq) eq.value = (eq.value ? eq.value + '; ' : '') + rotuloPM(p); });
     C.querySelector('[data-acao=relatorio]').onclick = function () { imprimir(gera()); };
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(gera()); };
     form.onsubmit = function (e) {
       e.preventDefault();
       var d = dadosForm(form), nome = f.titulo.split(' — ')[0] + ' - ' + (d.bo || d.vNome || 'sem nº');
+      d.livro = { data: dataBR(d.data), telefone: d.vTel, nome: d.vNome, natureza: d.natureza || (chave === 'visita' ? 'Visita' : f.modulo),
+        resultado: d.resultado || (chave === 'visita' ? (d.atendeu === 'Sim' ? 'Visita realizada' : d.atendeu === 'Não' ? 'Vítima não encontrada' : 'Visita') : ''),
+        dataVisita: chave === 'visita' ? dataBR(d.data) + ' ' + (d.hora || '') : '', re: pm1 ? pm1.re : '', qra: pm1 ? pm1.qra : '',
+        dataHora: dataBR(d.data) + ' ' + (d.hora || ''), unidade: (pm1 && pm1.cia) || CONFIG.batalhao || '' };
       salvar(f.modulo, nome, gera(), d, form.querySelector('[type=submit]'));
     };
   }
   function dadosForm(form) { var d = {}; [].forEach.call(form.elements, function (el) { if (el.name) d[el.name] = el.type === 'checkbox' ? el.checked : el.value; }); return d; }
   function relatorioForm(f, form) {
-    var d = dadosForm(form), h = cabecalho(f.titulo);
+    var d = dadosForm(form), h = cabecalho(f.titulo, true);
     f.secoes.forEach(function (s, i) {
       h += '<h2>' + esc(s[0]) + '</h2><table>';
       if (s[1] === 'checks') h += s[2].map(function (t, j) { return '<tr><td style="width:30px;text-align:center">' + (d['ck' + i + '_' + j] ? '☑' : '☐') + '</td><td>' + esc(t) + '</td></tr>'; }).join('');
@@ -163,7 +179,8 @@
   function salvar(modulo, nome, html, dados, bt) {
     if (bt) { bt.disabled = true; bt.textContent = 'Salvando…'; }
     return srv('salvarDocumento', modulo, nome, html, dados).then(function (r) {
-      aviso('✅ Salvo no seu Drive. <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir arquivo</a>');
+      if (r.prot) C.setAttribute('data-prot', r.prot);
+      aviso('✅ Salvo com o <b>protocolo nº ' + esc(r.prot || '') + '</b>. <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir arquivo</a>');
     }).catch(function (e) { aviso('❌ ' + esc(e)); }).then(function () { if (bt) { bt.disabled = false; bt.textContent = '💾 Salvar no Drive'; } });
   }
 
@@ -255,7 +272,7 @@
     var nome = function (n, l, t) { return campo([n, l, t]); };
     var h = titulo('Roteiro de Contato Telefônico', 'Programa Mulher Segura — registre as respostas durante a ligação. Ao salvar, a linha entra automaticamente no Livro de Registro.') +
       '<div class="tela"><form id="form"><div class="cartao"><div class="grade">' +
-      nome('data', 'Data', 'date') + nome('hora', 'Horário', 'time') + nome('nome', 'Nome da mulher') + nome('telefone', 'Telefone') + nome('prot', 'Protocolo') + nome('bo', 'Nº ocorrência / BOe') +
+      nome('data', 'Data', 'date') + nome('hora', 'Horário', 'time') + nome('nome', 'Nome da mulher') + nome('telefone', 'Telefone') + nome('bo', 'Nº ocorrência / BOe') +
       nome('dataBo', 'Data da ocorrência', 'date') + campo(['natureza', 'Natureza', ['', 'A98', 'A99', 'Outra']]) + seletorPM('selPol', '👮 Policial que está ligando') + nome('policial', 'Policial responsável (grad. e nome)') + nome('re', 'RE') + nome('qra', 'QRA') + nome('unidade', 'Unidade') +
       '</div></div><div class="alerta">Se ela disser que corre perigo agora (pergunta 7): encerre o roteiro e acione o 190 imediatamente.</div><div class="cartao">' +
       PERGUNTAS.map(function (p, i) {
@@ -272,7 +289,7 @@
     C.innerHTML = h;
     var form = document.getElementById('form');
     var gera = function () {
-      var d = dadosForm(form), r = cabecalho('Roteiro de Contato Telefônico — Programa Mulher Segura') + '<table>' +
+      var d = dadosForm(form), r = cabecalho('Roteiro de Contato Telefônico — Programa Mulher Segura', true) + '<table>' +
         [['Data', dataBR(d.data)], ['Horário', d.hora], ['Nome da mulher', d.nome], ['Telefone', d.telefone], ['Nº ocorrência/BOe', d.bo], ['Policial responsável', d.policial + ' — RE ' + d.re]].map(function (x) { return '<tr><th>' + x[0] + '</th><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
         '</table><h2>Respostas</h2><table>' + PERGUNTAS.map(function (p, i) { return '<tr><td>' + (i + 1) + '. ' + esc(p) + '</td><td style="width:35%">' + esc(d['p' + i] || '') + (d['o' + i] ? ' — ' + esc(d['o' + i]) : '') + '</td></tr>'; }).join('') +
         '</table><h2>Resultado</h2><table>' + [['Resultado', d.resultado], ['Aceita visita', d.aceitaVisita], ['Data/hora visita', (d.dataVisita || '').replace('T', ' ')], ['Nova ligação', d.novaLigacao], ['Observações', d.obs]].map(function (x) { return '<tr><th>' + x[0] + '</th><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
@@ -286,7 +303,8 @@
     C.querySelector('[data-acao=relatorio]').onclick = C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(gera()); };
     form.onsubmit = function (e) {
       e.preventDefault(); var d = dadosForm(form);
-      d.dataBo = dataBR(d.dataBo); d.dataVisita = (d.dataVisita || '').replace('T', ' '); d.data = dataBR(d.data);
+      d.livro = { data: dataBR(d.dataBo) || dataBR(d.data), telefone: d.telefone, nome: d.nome, natureza: d.natureza, resultado: d.resultado, aceitaVisita: d.aceitaVisita,
+        dataVisita: dataBR((d.dataVisita || '').slice(0, 10)) + ' ' + (d.dataVisita || '').slice(11, 16), re: d.re, qra: d.qra, dataHora: dataBR(d.data) + ' ' + (d.hora || ''), unidade: d.unidade };
       salvar('Ligações Mulher Segura', 'Ligação - ' + (d.nome || 'sem nome'), gera(), d, form.querySelector('[type=submit]'));
     };
   }
@@ -294,35 +312,63 @@
   /* ---------- livro de registro ---------- */
   var COL_LIVRO = ['PROT', 'DATA', 'TELEFONE', 'NOME DA VÍTIMA', 'NATUREZA', 'RESULTADO', 'ACEITA VISITA', 'DATA/HORA VISITA', 'RE', 'QRA', 'DATA/HORA LIGAÇÃO', 'UNIDADE', 'ASSINATURA'];
   function telaLivro() {
-    C.innerHTML = titulo('Livro de Registro', 'Preenchido automaticamente a cada ligação salva no Roteiro. A impressão sai só com as linhas que têm dados.') +
-      '<div class="cartao nao-imprimir"><div class="grade">' + campo(['lMes', 'Mês (deixe vazio para todos)', 'month']) + campo(['lBusca', 'Buscar (nome, RE, Cia…)']) + '</div></div>' +
-      '<div class="cartao tela"><p class="vazio">Carregando…</p></div><div class="relatorio"></div>';
-    var todas = [], url = '#';
+    C.innerHTML = titulo('Livro de Registro', 'Cada ocorrência salva ganha um protocolo. Ligações entram sozinhas; as demais você marca abaixo e envia, sem digitar nada.') +
+      '<div class="cartao nao-imprimir" id="pend"><p class="vazio">Carregando…</p></div>' +
+      '<div class="cartao nao-imprimir"><div class="grade">' + campo(['lMes', 'Mês (vazio = todos)', 'month']) + campo(['lBusca', 'Buscar (nome, RE, protocolo…)']) + '</div>' +
+      '<div class="acoes"><button class="bt" type="button" data-acao="impLivro">🖨 Imprimir livro</button><button class="bt sec" type="button" data-acao="impBranco">📄 Imprimir em branco</button>' +
+      '<a class="bt sec" id="lnkPasta" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="#">📁 Abrir pasta no Drive</a></div></div>' +
+      '<div class="cartao tela" id="tabLivro"></div><div class="relatorio"></div>';
+    var todas = [];
     function filtradas() {
       var m = document.getElementById('f_lMes').value, b = document.getElementById('f_lBusca').value.toLowerCase();
       var mm = m ? '/' + m.slice(5, 7) + '/' + m.slice(0, 4) : '';
       return todas.filter(function (l) {
-        if (!l.some(function (v) { return String(v).trim(); })) return false; // ignora linha vazia
-        if (mm && (l[10] + ' ' + l[1]).indexOf(mm) < 0) return false;
+        if (!l.some(function (v) { return String(v).trim(); })) return false;
+        if (mm && (l[1] + ' ' + l[10]).indexOf(mm) < 0) return false;
         return !b || l.join(' ').toLowerCase().indexOf(b) >= 0;
       });
     }
     function tabela(ls) {
       return '<div class="rolar"><table class="tabela"><tr>' + COL_LIVRO.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>' +
-        ls.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>';
+        ls.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + (esc(v) || '&nbsp;') + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>';
     }
     function desenhar() {
       var ls = filtradas();
-      C.querySelectorAll('.cartao')[1].innerHTML = '<p class="nao-imprimir"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir pasta do livro no Drive</a> · ' + ls.length + ' registro(s)</p>' +
-        (ls.length ? tabela(ls) : '<p class="vazio">Nenhuma ligação encontrada. Salve uma ligação no “Roteiro da ligação” e ela aparece aqui.</p>');
+      document.getElementById('tabLivro').innerHTML = '<h2 style="margin-top:0">Lançamentos (' + ls.length + ')</h2>' +
+        (ls.length ? tabela(ls) : '<p class="vazio">Nenhum lançamento ainda.</p>');
     }
-    srv('lerLivro').then(function (r) { todas = r.linhas || []; url = r.url; desenhar(); })
-      .catch(function (e) { C.querySelectorAll('.cartao')[1].innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
-    C.querySelector('.cartao').addEventListener('input', desenhar);
-    C.querySelector('[data-acao=imprimir]').onclick = function () {
-      var ls = filtradas(), m = document.getElementById('f_lMes').value;
-      if (!ls.length) return aviso('Não há registros para imprimir.');
-      imprimir('<style>@page{size:landscape}</style>' + cabecalho('Livro de Registro — Programa Mulher Segura' + (m ? ' — ' + m.slice(5, 7) + '/' + m.slice(0, 4) : '')) + tabela(ls));
+    function desenharPend(p) {
+      var el = document.getElementById('pend');
+      el.innerHTML = '<h2 style="margin-top:0">Enviar ocorrências para o livro</h2>' + (p.length ?
+        '<label class="check" style="font-weight:600"><input type="checkbox" id="pTodos"> Selecionar todas (' + p.length + ')</label>' +
+        p.map(function (o) { return '<label class="check"><input type="checkbox" value="' + esc(o[0]) + '"> <span><b>Prot ' + esc(o[0]) + '</b> · ' + esc(o[1]) + ' · ' + esc(o[2]) + (o[3] ? ' · ' + esc(o[3]) : '') + '</span></label>'; }).join('') +
+        '<div class="acoes"><button class="bt" type="button" id="btEnviar">📒 Enviar selecionadas para o livro</button></div>'
+        : '<p class="desc" style="margin:0">Nenhuma ocorrência aguardando. Tudo que você salvar aparece aqui para enviar.</p>');
+      var todos = document.getElementById('pTodos');
+      if (todos) todos.onchange = function () { [].forEach.call(el.querySelectorAll('input[value]'), function (c) { c.checked = todos.checked; }); };
+      var bt = document.getElementById('btEnviar');
+      if (bt) bt.onclick = function () {
+        var sel = [].map.call(el.querySelectorAll('input[value]:checked'), function (c) { return c.value; });
+        if (!sel.length) return aviso('Marque ao menos uma ocorrência.');
+        bt.disabled = true; bt.textContent = 'Enviando…';
+        srv('livroEnviar', sel).then(function (r) { aplicar(r); aviso('✅ ' + sel.length + ' ocorrência(s) lançada(s) no livro.'); })
+          .catch(function (e) { aviso('❌ ' + esc(e)); bt.disabled = false; bt.textContent = '📒 Enviar selecionadas para o livro'; });
+      };
+    }
+    function aplicar(r) { todas = r.linhas || []; document.getElementById('lnkPasta').href = r.url || '#'; desenhar(); desenharPend(r.pendentes || []); }
+    srv('lerLivro').then(aplicar).catch(function (e) { document.getElementById('pend').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    [].forEach.call(C.querySelectorAll('#f_lMes,#f_lBusca'), function (el) { el.addEventListener('input', desenhar); });
+    var titLivro = function () { var m = document.getElementById('f_lMes').value; return 'Livro de Registro — Programa Mulher Segura' + (m ? ' — ' + m.slice(5, 7) + '/' + m.slice(0, 4) : ''); };
+    var imprimirLivro = function () {
+      var ls = filtradas();
+      if (!ls.length) return aviso('Não há lançamentos para imprimir. Use “Imprimir em branco”.');
+      imprimir('<style>@page{size:landscape}</style>' + cabecalho(titLivro()) + tabela(ls));
+    };
+    C.querySelector('[data-acao=impLivro]').onclick = imprimirLivro;
+    C.querySelector('[data-acao=imprimir]').onclick = imprimirLivro;
+    C.querySelector('[data-acao=impBranco]').onclick = function () {
+      var vazias = []; for (var i = 0; i < 18; i++) vazias.push(COL_LIVRO.map(function () { return ''; }));
+      imprimir('<style>@page{size:landscape}.relatorio td{height:26px}</style>' + cabecalho('Livro de Registro — Programa Mulher Segura') + tabela(vazias));
     };
   }
 
@@ -548,7 +594,7 @@
     var pg = (location.hash || '#inicio').slice(1); if (!TELAS[pg]) pg = 'inicio';
     [].forEach.call(document.querySelectorAll('.menu a'), function (a) { a.classList.toggle('ativo', a.getAttribute('data-pg') === pg); });
     document.getElementById('menu').classList.remove('aberto');
-    TELAS[pg](); C.focus(); window.scrollTo(0, 0);
+    C.removeAttribute('data-prot'); TELAS[pg](); C.focus(); window.scrollTo(0, 0);
   }
   function logoUrl(i) { var u = (CONFIG.logos || [])[i] || ''; return /^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+$/.test(u) ? u : ''; }
   function aplicaConfig() {

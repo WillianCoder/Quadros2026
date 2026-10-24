@@ -102,6 +102,14 @@ function doPost(e) {
         sh.appendRow([agora, email, req.logo.remover ? 'Removeu logo ' + (pos + 1) : 'Enviou logo ' + (pos + 1), 'Admin', '', c.logos[pos]]);
       }
       r = { ok: true, config: lerConfig_() };
+    } else if (req.acao === 'protocolo') {
+      const lock = LockService.getScriptLock(); lock.waitLock(20000);
+      try {
+        let n = (+PROPS.getProperty('PROTOCOLO') || 0) + 1;
+        if (n > 99999) n = 1;
+        PROPS.setProperty('PROTOCOLO', String(n));
+        r = { ok: true, prot: ('0000' + n).slice(-5) };
+      } finally { lock.releaseLock(); }
     } else if (req.acao === 'efetivo') {
       const ef = abaEfetivo_();
       const p = req.dados || {};
@@ -169,15 +177,26 @@ function iniciar() {
 
 /** Salva relatório (PDF + dados) no Drive de quem está logado, organizado por módulo/mês. */
 function salvarDocumento(modulo, titulo, html, dados) {
+  const prot = chamarRegistro_({ acao: 'protocolo' }).prot;
+  html = String(html).split('%%PROT%%').join(prot);
+  titulo = 'Prot ' + prot + ' - ' + titulo;
   const mes = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM');
   const pasta = pasta_([modulo, mes]);
   const nome = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd HHmm') + ' - ' + limpa_(titulo).slice(0, 80);
   const doc = '<html><head><meta charset="utf-8"><style>' + CSS_PDF + '</style></head><body>' + html + '</body></html>';
   const pdf = pasta.createFile(Utilities.newBlob(doc, 'text/html', nome + '.html').getAs('application/pdf').setName(nome + '.pdf'));
-  pasta.createFile(nome + '.json', JSON.stringify(dados || {}, null, 1), 'application/json');
-  if (modulo === 'Ligações Mulher Segura' && dados) livroAdicionar_(dados);
+  dados = dados || {};
+  pasta.createFile(nome + '.json', JSON.stringify(dados, null, 1), 'application/json');
+  // índice de ocorrências (para enviar ao livro depois); a ligação já entra direto no livro
+  if (dados.livro) { // só ocorrências entram no índice (escala e indicadores não)
+    const lv = dados.livro;
+    lv.prot = prot;
+    const direto = modulo === 'Ligações Mulher Segura';
+    ocorrencias_().appendRow([prot, lv.data || '', modulo, limpa_(lv.nome), pdf.getUrl(), direto ? 'Sim' : 'Não', JSON.stringify(lv)]);
+    if (direto) livroAdicionar_(lv);
+  }
   chamarRegistro_({ acao: 'registrar', dados: { acao: 'Criou documento', modulo: modulo, descricao: titulo, link: pdf.getUrl() } });
-  return { url: pdf.getUrl(), pasta: pasta.getUrl() };
+  return { url: pdf.getUrl(), pasta: pasta.getUrl(), prot: prot };
 }
 
 /** Lista arquivos do Drive do usuário dentro da pasta do sistema. */
@@ -195,17 +214,46 @@ function listarArquivos() {
 
 /** Livro de Registro (planilha no Drive do usuário). */
 function livroAdicionar_(d) {
-  const sh = livro_();
-  sh.appendRow([d.prot || '', d.dataBo || '', d.telefone || '', d.nome || '', d.natureza || '', d.resultado || '', d.aceitaVisita || '',
-    d.dataVisita || '', d.re || '', d.qra || '', (d.data || '') + ' ' + (d.hora || ''), d.unidade || '', '']);
+  livro_().appendRow([d.prot || '', d.data || '', d.telefone || '', d.nome || '', d.natureza || '', d.resultado || '', d.aceitaVisita || '',
+    d.dataVisita || '', d.re || '', d.qra || '', d.dataHora || '', d.unidade || '', ''].map(limpa_));
 }
 function lerLivro() {
   const sh = livro_(), n = sh.getLastRow();
-  return { url: sh.getParent().getUrl(), linhas: n > 1 ? sh.getRange(2, 1, n - 1, 13).getDisplayValues() : [] };
+  const oc = ocorrencias_(), m = oc.getLastRow();
+  const pend = m > 1 ? oc.getRange(2, 1, m - 1, 6).getDisplayValues().filter(l => l[5] !== 'Sim').map(l => l.slice(0, 4)).reverse() : [];
+  return { url: sh.getParent().getUrl(), linhas: n > 1 ? sh.getRange(2, 1, n - 1, 13).getDisplayValues() : [], pendentes: pend };
+}
+/** Envia ao livro as ocorrências escolhidas (pelo protocolo). */
+function livroEnviar(prots) {
+  const quer = {}; (prots || []).forEach(p => quer[String(p)] = 1);
+  const oc = ocorrencias_(), m = oc.getLastRow();
+  if (m > 1) {
+    const vals = oc.getRange(2, 1, m - 1, 7).getDisplayValues();
+    vals.forEach((l, i) => {
+      if (!quer[l[0]] || l[5] === 'Sim') return;
+      let d = {}; try { d = JSON.parse(l[6] || '{}'); } catch (e) { }
+      d.prot = l[0];
+      livroAdicionar_(d);
+      oc.getRange(i + 2, 6).setValue('Sim');
+    });
+    chamarRegistro_({ acao: 'registrar', dados: { acao: 'Enviou ao livro de registro', modulo: 'Livro de Registro', descricao: 'Prot ' + Object.keys(quer).join(', ') } });
+  }
+  return lerLivro();
+}
+function ocorrencias_() {
+  const ss = livro_().getParent();
+  let oc = ss.getSheetByName('Ocorrências');
+  if (!oc) {
+    oc = ss.insertSheet('Ocorrências');
+    oc.appendRow(['PROT', 'DATA', 'TIPO', 'VÍTIMA', 'ARQUIVO', 'NO LIVRO', 'DADOS']);
+    oc.getRange(1, 1, 1, 7).setFontWeight('bold'); oc.setFrozenRows(1);
+  }
+  return oc;
 }
 function livro_() {
   const pasta = pasta_(['Livro de Registro']);
   const it = pasta.getFilesByName('Livro de Registro - Ligações');
+  // planilha: aba 1 = livro, aba "Ocorrências" = índice de tudo que foi salvo
   let ss;
   if (it.hasNext()) ss = SpreadsheetApp.open(it.next());
   else {
@@ -214,7 +262,7 @@ function livro_() {
     ss.getActiveSheet().appendRow(['PROT', 'DATA', 'TELEFONE', 'NOME DA VÍTIMA', 'NATUREZA', 'RESULTADO DA LIGAÇÃO', 'ACEITA VISITA', 'DATA/HORA VISITA', 'RE DO POLICIAL', 'QRA', 'DATA/HORA DA LIGAÇÃO', 'UNIDADE', 'ASSINATURA']);
     ss.getActiveSheet().getRange(1, 1, 1, 13).setFontWeight('bold');
   }
-  return ss.getSheets()[0];
+  return ss.getSheets().filter(x => x.getName() !== 'Ocorrências')[0];
 }
 
 function efetivo(op, dados) { return chamarRegistro_({ acao: 'efetivo', op: op, dados: dados || null }).lista; }
