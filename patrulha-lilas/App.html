@@ -490,12 +490,13 @@
     function mostrar(r) {
       var c = r.config || CONFIG;
       document.getElementById('adm').innerHTML = '<h2 style="margin-top:0">Cabeçalho dos relatórios</h2><form id="fc"><div class="grade">' +
+        campo(['nome', 'Nome do sistema (ex.: Cabine Lilás)']) + campo(['batalhao', 'Batalhão (ex.: 3º BPM/M)']) +
         campo(['unidade', 'Linha 1 (instituição)', 'larga']) + campo(['subunidade', 'Linha 2 (unidade / programa)', 'larga']) + campo(['cidade', 'Cidade']) +
         '</div><div class="acoes"><button class="bt">💾 Salvar configurações</button></div></form>' +
         '<h2>Logos (brasão PMESP e outro, ex.: batalhão ou programa)</h2><p class="desc">Aparecem pequenos no topo, nos relatórios impressos e bem clarinhos ao fundo. Use a imagem oficial em PNG com fundo transparente.</p><div class="grade">' +
         [1, 2].map(function (n) { var u = logoUrl(n - 1); return '<div class="cartao" style="margin:0"><b>Logo ' + n + (n === 1 ? ' (esquerda)' : ' (direita)') + '</b><div style="height:70px;display:grid;place-items:center;margin:8px 0">' + (u ? '<img src="' + esc(u) + '" alt="" style="max-height:64px">' : '<span class="desc">sem logo</span>') + '</div><input type="file" accept="image/*" data-logo="' + n + '">' + (u ? '<button type="button" class="imprimir" style="margin-top:8px" data-tirar="' + n + '">remover</button>' : '') + '</div>'; }).join('') +
         '</div><div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema. A planilha original fica no Drive do dono, protegida.</div>';
-      ['unidade', 'subunidade', 'cidade'].forEach(function (k) { document.getElementById('f_' + k).value = c[k] || ''; });
+      ['nome', 'batalhao', 'unidade', 'subunidade', 'cidade'].forEach(function (k) { document.getElementById('f_' + k).value = c[k] || ''; });
       var depois = function (r2) { CONFIG = r2.config || CONFIG; aplicaConfig(); mostrar(r2); aviso('✅ Logo atualizado.'); };
       [].forEach.call(document.querySelectorAll('[data-logo]'), function (inp) {
         inp.onchange = function () {
@@ -510,18 +511,34 @@
         b.onclick = function () { if (confirm('Remover este logo?')) srv('adminEntrar', senha, null, { pos: +b.getAttribute('data-tirar'), remover: true }).then(depois).catch(function (er) { aviso('❌ ' + esc(er)); }); };
       });
       document.getElementById('fc').onsubmit = function (e) {
-        e.preventDefault(); var n = { unidade: document.getElementById('f_unidade').value, subunidade: document.getElementById('f_subunidade').value, cidade: document.getElementById('f_cidade').value };
+        e.preventDefault(); var n = { nome: document.getElementById('f_nome').value, batalhao: document.getElementById('f_batalhao').value, unidade: document.getElementById('f_unidade').value, subunidade: document.getElementById('f_subunidade').value, cidade: document.getElementById('f_cidade').value };
         srv('adminEntrar', senha, n).then(function (r2) { CONFIG = r2.config || n; aplicaConfig(); aviso('✅ Configurações salvas.'); }).catch(function (er) { aviso('❌ ' + esc(er)); });
       };
     }
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
   }
 
+  var ILUSTRACAO = '<svg class="ilus" viewBox="0 0 240 240" aria-hidden="true">' +
+    '<circle cx="120" cy="120" r="112" fill="rgba(255,255,255,.10)"/><circle cx="120" cy="120" r="86" fill="rgba(255,255,255,.08)"/>' +
+    '<path d="M120 26 196 52v58c0 52-32 88-76 106C76 198 44 162 44 110V52Z" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.85)" stroke-width="4"/>' +
+    // mulher (cabelo, rosto, ombros)
+    '<path d="M120 62c-24 0-38 18-38 40 0 16 4 30-6 44 14 4 28 2 36-6h16c8 8 22 10 36 6-10-14-6-28-6-44 0-22-14-40-38-40Z" fill="#fff" opacity=".95"/>' +
+    '<circle cx="120" cy="104" r="22" fill="var(--lilas-cl)"/>' +
+    '<path d="M74 196c4-30 22-46 46-46s42 16 46 46c-14 10-30 16-46 20-16-4-32-10-46-20Z" fill="#fff" opacity=".95"/>' +
+    // laço lilás (símbolo do enfrentamento à violência contra a mulher)
+    '<path d="M120 164c-8-10-20-10-20 0s12 14 20 8c8 6 20 2 20-8s-12-10-20 0Zm0 0-10 26m10-26 10 26" fill="none" stroke="var(--lilas)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    // estrela
+    '<path d="m198 40 4 8 9 1-6.5 6 1.5 9-8-4.5-8 4.5 1.5-9-6.5-6 9-1Z" fill="#fff"/></svg>';
   function telaInicio() {
     var a = [['vd', '💜 Violência doméstica', 'Atendimento e descumprimento de MPU'], ['sexual', '🛡️ Crime sexual', 'Acolhimento sem revitimização'], ['ligacao', '📞 Ligação Mulher Segura', 'Roteiro com 14 perguntas'],
       ['visita', '🏡 Visita', 'Relatório da visita presencial'], ['livro', '📒 Livro de registro', 'Ligações lançadas'], ['escala', '📅 Escala', 'Gerar e editar a escala'], ['efetivo', '👮 Efetivo', 'Policiais, RE, QRA e Cia'],
       ['rede', '🤝 Rede de apoio', 'Para orientar a vítima'], ['drive', '📁 Meus documentos', 'Tudo salvo no seu Drive']];
-    C.innerHTML = '<h1>Olá' + (EMAIL ? ', ' + esc(EMAIL.split('@')[0]) : '') + ' 💜</h1><p class="desc">Escolha o que precisa fazer. Tudo pode ser impresso e salvo no seu Google Drive.</p>' +
+    var lg = [0, 1].map(logoUrl).filter(Boolean).map(function (u) { return '<img src="' + esc(u) + '" alt="">'; }).join('');
+    var hora = new Date().getHours(), saud = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+    C.innerHTML = '<section class="hero"><div class="hero-txt">' + (lg ? '<div class="hero-logos">' + lg + '</div>' : '') +
+      '<small>' + esc(CONFIG.unidade) + (CONFIG.batalhao ? ' · ' + esc(CONFIG.batalhao) : '') + '</small>' +
+      '<h1>' + esc(CONFIG.nome || 'Patrulha Lilás') + '</h1><p>' + esc(CONFIG.subunidade) + '</p>' +
+      '<p class="hero-ola">' + saud + (EMAIL ? ', ' + esc(EMAIL.split('@')[0]) : '') + '. Escolha abaixo o que precisa fazer.</p></div>' + ILUSTRACAO + '</section>' +
       (DEMO ? '<div class="dica">Modo demonstração: aberto fora do Google Apps Script — nada é salvo no Drive.</div>' : '') +
       '<div class="atalhos">' + a.map(function (x) { return '<a href="#' + x[0] + '"><b>' + x[1] + '</b><span>' + x[2] + '</span></a>'; }).join('') + '</div>' +
       '<div class="cartao" style="margin-top:16px"><b>Em perigo agora?</b> Acione o <b>190</b>. Orientação 24 h: <b>180</b>.</div>';
@@ -537,7 +554,9 @@
   }
   function logoUrl(i) { var u = (CONFIG.logos || [])[i] || ''; return /^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+$/.test(u) ? u : ''; }
   function aplicaConfig() {
-    document.getElementById('subUnidade').textContent = CONFIG.subunidade || '';
+    document.getElementById('subUnidade').textContent = [CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ');
+    document.getElementById('nomeSistema').textContent = CONFIG.nome || 'Patrulha Lilás';
+    document.title = CONFIG.nome || 'Patrulha Lilás';
     var l1 = logoUrl(0), l2 = logoUrl(1);
     var img = function (id, u) { var el = document.getElementById(id); if (u) { el.src = u; el.hidden = false; } else { el.hidden = true; el.removeAttribute('src'); } };
     img('logo1', l1); img('logo2', l2); img('marcaDagua', l1);

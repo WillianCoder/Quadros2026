@@ -82,7 +82,7 @@ function doPost(e) {
       if (!ok) throw new Error('Senha incorreta.');
       if (req.config) {
         const c = lerConfig_();
-        ['unidade', 'subunidade', 'cidade'].forEach(k => { if (req.config[k] != null) c[k] = String(req.config[k]).slice(0, 200); });
+        ['nome', 'batalhao', 'unidade', 'subunidade', 'cidade'].forEach(k => { if (req.config[k] != null) c[k] = String(req.config[k]).slice(0, 200); });
         PROPS.setProperty('CONFIG', JSON.stringify(c));
         sh.appendRow([agora, email, 'Alterou configurações', 'Admin', 'Cabeçalho/unidade', '']);
       }
@@ -230,7 +230,7 @@ function pasta_(partes) {
   return p;
 }
 function lerConfig_() {
-  const padrao = { unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo', logos: ['', ''] };
+  const padrao = { nome: 'Patrulha Lilás', batalhao: '', unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo', logos: ['', ''] };
   try { return Object.assign(padrao, JSON.parse(PROPS.getProperty('CONFIG') || '{}')); } catch (e) { return padrao; }
 }
 function limpa_(s) { s = String(s == null ? '' : s).slice(0, 2000); return /^[=+\-@]/.test(s) ? "'" + s : s; } // evita fórmula na planilha
