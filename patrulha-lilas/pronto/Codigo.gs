@@ -53,7 +53,7 @@ function definirUrlRegistro() {
 const API_PERMITIDAS = ['getBootstrapData', 'salvarCadastroSala', 'getPendingContacts', 'salvarContatoVitima', 'getContactReportData',
   'getOpenVisits', 'salvarAcompanhamento', 'getConsulta', 'getOccurrenceSummary', 'salvarArquivos', 'excluirOcorrencia',
   'getDashboardData', 'getMapStatisticalData', 'geocodificarPendentesMapa', 'salvarLimitesMapaImportados', 'livroLer', 'livroEnviar'];
-const API_SO_DONO = ['excluirOcorrencia', 'salvarLimitesMapaImportados'];
+const API_SO_DONO = ['excluirOcorrencia', 'salvarLimitesMapaImportados', 'geocodificarPendentesMapa'];
 
 function doPost(e) {
   let r;
@@ -973,6 +973,8 @@ function salvarCadastroSala(payload) {
     const targetRow = Math.max(sheet.getLastRow() + 1, APP_CONFIG.DATA_START_ROW);
     sheet.getRange(targetRow, 1, 1, TOTAL_COLUMNS).setValues([recordToRow_(record)]);
     audit_('CADASTRO SALA', record.id, 'Nova ocorrência cadastrada sem dados sensíveis no log.');
+    // já coloca no mapa: localiza o endereço na hora do cadastro
+    try { geocodeRecordsForMap_([record], ensureMapGeoSheet_(getSpreadsheet_()), 1, false); } catch (e) { console.error('Mapa: ' + e.message); }
 
     return {
       success: true,

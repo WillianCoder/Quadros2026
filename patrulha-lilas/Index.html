@@ -37,7 +37,9 @@
         <button class="nav-button" data-page="rede"><span>10</span> Rede de Apoio</button>
         <button class="nav-button" data-page="pop"><span>11</span> POP 2.09</button>
         <button class="nav-button" data-page="registro"><span>12</span> Registro de Edições</button>
-        <button class="nav-button hidden" data-page="admin" id="menuAdmin"><span>13</span> Administrador</button>
+        <button class="nav-button" data-page="falar"><span>13</span> Como Falar com a Vítima</button>
+        <button class="nav-button" data-page="exemplo"><span>14</span> Exemplos e Tutorial</button>
+        <button class="nav-button hidden" data-page="admin" id="menuAdmin"><span>15</span> Administrador</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -62,7 +64,7 @@
               <small>Proteger, servir e empoderar</small>
             </div>
           </div>
-          <div class="topbar-buttons"><button id="refreshButton" class="button ghost" type="button">Atualizar página</button><button id="btTema" class="button ghost" type="button" title="Aparência: claro, escuro e temas">🎨 Aparência</button></div>
+          <div class="topbar-buttons"><button id="refreshButton" class="button ghost" type="button">Atualizar página</button><button id="btTema" class="button ghost" type="button" title="Aparência: claro, escuro e temas">🎨 Aparência</button><button id="btDicas" class="button ghost" type="button" title="Ligar ou desligar as dicas de cada aba">💡 Dicas: ligadas</button></div>
           <div id="painelTema" class="painel-tema" hidden>
             <p>Aparência</p>
             <div class="modos"><button type="button" data-modo="claro">☀️ Claro</button><button type="button" data-modo="escuro">🌙 Escuro</button><button type="button" data-modo="auto">Auto</button></div>
@@ -71,6 +73,8 @@
           </div>
         </div>
       </header>
+
+      <div id="tutorial" class="tutorial hidden"></div>
 
       <section id="page-extra" class="page"><div id="conteudo" class="conteudo" tabindex="-1"></div></section>
 
@@ -194,26 +198,26 @@
         <div class="info-banner map-info-banner">
           <strong>Análise territorial</strong>
           <span>Os mapas utilizam somente ocorrências das áreas do <b>3º BPM/M – 1ª, 2ª e 3ª Cia</b>. Os limites são carregados diretamente da camada do <b>3º BPM/M</b> do mapa informado. Nomes, telefones e históricos das vítimas não são exibidos nesta página.</span>
-          <a id="mapSourceLink" class="map-source-link" href="#" target="_blank" rel="noopener noreferrer">Abrir mapa do 3º BPM/M</a>
+          <a id="mapSourceLink" class="map-source-link so-admin" href="#" target="_blank" rel="noopener noreferrer">Abrir mapa do 3º BPM/M</a>
         </div>
 
         <div class="toolbar card map-toolbar">
           <div class="field compact"><label for="mapDateFrom">Data inicial</label><input id="mapDateFrom" type="date"></div>
           <div class="field compact"><label for="mapDateTo">Data final</label><input id="mapDateTo" type="date"></div>
           <div class="field compact map-cia-field"><label for="mapCia">CIA</label><select id="mapCia"></select></div>
-          <button id="mapSearchButton" class="button primary" type="button">Pesquisar</button>
-          <button id="mapGeocodeButton" class="button secondary" type="button">Processar endereços pendentes</button>
-          <button id="mapBoundaryAutoButton" class="button ghost map-import-action" type="button">Baixar KML completo do 3º BPM/M</button>
-          <button id="mapBoundaryChooseButton" class="button ghost map-import-action" type="button">Importar KML/KMZ completo</button>
+          <button id="mapSearchButton" class="button primary" type="button">🔄 Atualizar mapa</button>
+          <button id="mapGeocodeButton" class="button secondary so-admin" type="button">Processar endereços pendentes</button>
+          <button id="mapBoundaryAutoButton" class="button ghost map-import-action so-admin" type="button">Baixar KML completo do 3º BPM/M</button>
+          <button id="mapBoundaryChooseButton" class="button ghost map-import-action so-admin" type="button">Importar KML/KMZ completo</button>
           <input id="mapBoundaryFile" class="hidden-file-input" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip">
         </div>
 
-        <div id="mapBoundaryStatus" class="map-boundary-status checking">
+        <div id="mapBoundaryStatus" class="map-boundary-status checking so-admin">
           <strong>Verificando limites territoriais…</strong>
           <span>A Página 6 carregará automaticamente os limites já salvos.</span>
         </div>
 
-        <div id="mapImportGuidance" class="map-import-guidance">
+        <div id="mapImportGuidance" class="map-import-guidance so-admin">
           <strong>Primeira configuração:</strong> a importação do KML/KMZ completo é feita somente uma vez. Depois que os polígonos forem salvos na aba <code>MAPA LIMITES</code>, o sistema os carregará automaticamente em todos os acessos. Arquivos que contenham somente NetworkLink não possuem os polígonos.
         </div>
 
@@ -362,6 +366,7 @@
   </div>
 
   <div id="toast" class="toast"></div>
+  <button id="btImprimirFlutuante" class="imprimir-flutuante" type="button" title="Imprimir esta página" aria-label="Imprimir esta página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4H7zM5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2Zm4 8v2h6v-2Zm8-5.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z" fill="currentColor"/></svg></button>
   <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>

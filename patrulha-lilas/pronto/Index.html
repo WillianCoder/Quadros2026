@@ -353,7 +353,54 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
 .relatorio .cab{text-align:center;border-bottom:2px solid var(--lilac-700);padding-bottom:6px;margin-bottom:12px;color:#222}
 .relatorio h1{font-size:15pt;margin:0}.relatorio h2{font-size:12pt}
 .relatorio table{border-collapse:collapse;width:100%;min-width:0}.relatorio td,.relatorio th{border:1px solid #bbb;padding:4px 6px;font-size:9pt;vertical-align:top;color:#222;background:#fff}
-@media(max-width:980px){.topbar-buttons{flex-direction:row}}
+
+.sidebar{overflow-y:auto}
+.sidebar .nav-menu{gap:6px}
+/* Configuração do mapa: só o administrador vê */
+body:not(.eh-admin) .so-admin{display:none!important}
+/* Dicas de cada aba */
+.tutorial{position:relative;margin:0 0 16px;padding:14px 46px 14px 18px;border-radius:14px;border:1px solid var(--lilac-300);background:linear-gradient(135deg,var(--lilac-100),var(--cartao));font-size:13px;color:var(--ink)}
+.tutorial strong{color:var(--lilac-800)}
+.tutorial ol{margin:6px 0 0;padding-left:20px}.tutorial li{margin:2px 0}
+.tutorial-fechar{position:absolute;right:10px;top:10px;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:15px;cursor:pointer}
+.tutorial-fechar:hover{background:var(--lilac-200)}
+/* Botão flutuante de impressão */
+.imprimir-flutuante{position:fixed;right:22px;bottom:22px;z-index:70;width:54px;height:54px;border:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,var(--lilac-700),var(--lilac-900));box-shadow:0 10px 26px rgba(60,25,80,.35);transition:.18s ease}
+.imprimir-flutuante:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 14px 30px rgba(60,25,80,.42)}
+.imprimir-flutuante svg{width:24px;height:24px}
+.toast{bottom:88px!important}
+/* Como falar com a vítima */
+#page-extra .grade-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#page-extra .grade-2 .cartao{margin-bottom:0}
+#page-extra .grade-2+.cartao,#page-extra .cartao+.grade-2{margin-top:16px}
+#page-extra .lista-dicas{margin:0;padding-left:18px;font-size:13px;line-height:1.6}
+#page-extra .alerta-cartao{border-left:5px solid var(--danger)}
+#page-extra .etapas{display:grid;gap:10px}
+#page-extra .etapa{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--lilac-50)}
+#page-extra .etapa>span{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;background:var(--lilac-700);color:#fff;font-weight:900;font-size:13px}
+#page-extra .etapa b{color:var(--lilac-800)}#page-extra .etapa p{margin:3px 0 0;font-size:13px}
+/* Exemplos */
+#page-extra .exemplo-topo{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+#page-extra .exemplo-topo h2{margin:2px 0 2px}
+#page-extra .exemplo-num{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--lilac-100);color:var(--lilac-800);font-weight:900}
+#page-extra .mapa-exemplo{position:relative;height:200px;border-radius:14px;border:1px solid var(--line);overflow:hidden;
+  background:repeating-linear-gradient(0deg,transparent 0 38px,rgba(120,100,140,.12) 38px 40px),repeating-linear-gradient(90deg,transparent 0 58px,rgba(120,100,140,.12) 58px 60px),var(--lilac-50)}
+#page-extra .mapa-exemplo .calor{position:absolute;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(220,40,60,.55),rgba(255,170,0,.35) 45%,transparent 70%)}
+#page-extra .mapa-exemplo .calor.fraco{width:80px;height:80px;opacity:.6}
+#page-extra .mapa-exemplo .ponto{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--lilac-800);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:2}
+#page-extra .mapa-exemplo small{position:absolute;right:10px;bottom:6px;color:var(--muted)}
+#page-extra .kpi-grid{margin-bottom:0}
+@media(max-width:780px){#page-extra .grade-2{grid-template-columns:1fr}}
+/* Impressão pelo botão flutuante: só o conteúdo da aba */
+@media print{
+  body.impressao-geral .sidebar,body.impressao-geral .topbar,body.impressao-geral .tutorial,body.impressao-geral .imprimir-flutuante,body.impressao-geral .toast,body.impressao-geral .aviso,
+  body.impressao-geral .barra-pagina,body.impressao-geral .toolbar button,body.impressao-geral .form-actions,body.impressao-geral .loading-overlay{display:none!important}
+  body.impressao-geral .app-shell{display:block}body.impressao-geral .main-content{padding:0}
+  body.impressao-geral .card,body.impressao-geral #page-extra .cartao{box-shadow:none;break-inside:avoid}
+  .imprimir-flutuante,.tutorial{display:none!important}
+}
+@media(max-width:980px){.topbar-buttons{flex-direction:row;flex-wrap:wrap}}
 </style>
 
 </head>
@@ -386,7 +433,9 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
         <button class="nav-button" data-page="rede"><span>10</span> Rede de Apoio</button>
         <button class="nav-button" data-page="pop"><span>11</span> POP 2.09</button>
         <button class="nav-button" data-page="registro"><span>12</span> Registro de Edições</button>
-        <button class="nav-button hidden" data-page="admin" id="menuAdmin"><span>13</span> Administrador</button>
+        <button class="nav-button" data-page="falar"><span>13</span> Como Falar com a Vítima</button>
+        <button class="nav-button" data-page="exemplo"><span>14</span> Exemplos e Tutorial</button>
+        <button class="nav-button hidden" data-page="admin" id="menuAdmin"><span>15</span> Administrador</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -411,7 +460,7 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
               <small>Proteger, servir e empoderar</small>
             </div>
           </div>
-          <div class="topbar-buttons"><button id="refreshButton" class="button ghost" type="button">Atualizar página</button><button id="btTema" class="button ghost" type="button" title="Aparência: claro, escuro e temas">🎨 Aparência</button></div>
+          <div class="topbar-buttons"><button id="refreshButton" class="button ghost" type="button">Atualizar página</button><button id="btTema" class="button ghost" type="button" title="Aparência: claro, escuro e temas">🎨 Aparência</button><button id="btDicas" class="button ghost" type="button" title="Ligar ou desligar as dicas de cada aba">💡 Dicas: ligadas</button></div>
           <div id="painelTema" class="painel-tema" hidden>
             <p>Aparência</p>
             <div class="modos"><button type="button" data-modo="claro">☀️ Claro</button><button type="button" data-modo="escuro">🌙 Escuro</button><button type="button" data-modo="auto">Auto</button></div>
@@ -420,6 +469,8 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
           </div>
         </div>
       </header>
+
+      <div id="tutorial" class="tutorial hidden"></div>
 
       <section id="page-extra" class="page"><div id="conteudo" class="conteudo" tabindex="-1"></div></section>
 
@@ -543,26 +594,26 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
         <div class="info-banner map-info-banner">
           <strong>Análise territorial</strong>
           <span>Os mapas utilizam somente ocorrências das áreas do <b>3º BPM/M – 1ª, 2ª e 3ª Cia</b>. Os limites são carregados diretamente da camada do <b>3º BPM/M</b> do mapa informado. Nomes, telefones e históricos das vítimas não são exibidos nesta página.</span>
-          <a id="mapSourceLink" class="map-source-link" href="#" target="_blank" rel="noopener noreferrer">Abrir mapa do 3º BPM/M</a>
+          <a id="mapSourceLink" class="map-source-link so-admin" href="#" target="_blank" rel="noopener noreferrer">Abrir mapa do 3º BPM/M</a>
         </div>
 
         <div class="toolbar card map-toolbar">
           <div class="field compact"><label for="mapDateFrom">Data inicial</label><input id="mapDateFrom" type="date"></div>
           <div class="field compact"><label for="mapDateTo">Data final</label><input id="mapDateTo" type="date"></div>
           <div class="field compact map-cia-field"><label for="mapCia">CIA</label><select id="mapCia"></select></div>
-          <button id="mapSearchButton" class="button primary" type="button">Pesquisar</button>
-          <button id="mapGeocodeButton" class="button secondary" type="button">Processar endereços pendentes</button>
-          <button id="mapBoundaryAutoButton" class="button ghost map-import-action" type="button">Baixar KML completo do 3º BPM/M</button>
-          <button id="mapBoundaryChooseButton" class="button ghost map-import-action" type="button">Importar KML/KMZ completo</button>
+          <button id="mapSearchButton" class="button primary" type="button">🔄 Atualizar mapa</button>
+          <button id="mapGeocodeButton" class="button secondary so-admin" type="button">Processar endereços pendentes</button>
+          <button id="mapBoundaryAutoButton" class="button ghost map-import-action so-admin" type="button">Baixar KML completo do 3º BPM/M</button>
+          <button id="mapBoundaryChooseButton" class="button ghost map-import-action so-admin" type="button">Importar KML/KMZ completo</button>
           <input id="mapBoundaryFile" class="hidden-file-input" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip">
         </div>
 
-        <div id="mapBoundaryStatus" class="map-boundary-status checking">
+        <div id="mapBoundaryStatus" class="map-boundary-status checking so-admin">
           <strong>Verificando limites territoriais…</strong>
           <span>A Página 6 carregará automaticamente os limites já salvos.</span>
         </div>
 
-        <div id="mapImportGuidance" class="map-import-guidance">
+        <div id="mapImportGuidance" class="map-import-guidance so-admin">
           <strong>Primeira configuração:</strong> a importação do KML/KMZ completo é feita somente uma vez. Depois que os polígonos forem salvos na aba <code>MAPA LIMITES</code>, o sistema os carregará automaticamente em todos os acessos. Arquivos que contenham somente NetworkLink não possuem os polígonos.
         </div>
 
@@ -711,6 +762,7 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
   </div>
 
   <div id="toast" class="toast"></div>
+  <button id="btImprimirFlutuante" class="imprimir-flutuante" type="button" title="Imprimir esta página" aria-label="Imprimir esta página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4H7zM5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2Zm4 8v2h6v-2Zm8-5.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z" fill="currentColor"/></svg></button>
   <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
@@ -954,6 +1006,7 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
       document.getElementById('pageTitle').textContent = pageMeta[page][0];
       document.getElementById('pageSubtitle').textContent = pageMeta[page][1];
     }
+    if (window.Extras) window.Extras.dica(page);
     if (window.innerWidth < 980) document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth' });
     await refreshCurrentPage();
   }
@@ -2959,14 +3012,121 @@ body{background:linear-gradient(145deg,var(--lilac-50),var(--lilac-100))}
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
   }
 
+
+  /* ---------- dicas de cada aba (botão liga/desliga) ---------- */
+  var DICAS = {
+    sala: ['Preencha com os dados do BOPM/BOPC.', 'Campos com * são obrigatórios.', 'Ao cadastrar, a ocorrência ganha um número (protocolo) e já entra no mapa.'],
+    contato: ['Escolha a ocorrência na lista da esquerda.', 'Ligue para a vítima — a aba “Como Falar com a Vítima” ajuda na conversa.', 'Registre o resultado. Se ela quiser visita, marque dia e hora (13h às 19h).'],
+    acompanhamento: ['Aqui ficam as visitas abertas: vermelho = atrasada, laranja = hoje.', 'Abra a visita para concluir, reagendar ou marcar a próxima (até 3).', 'Anexe o FONAR e informe o BO-e da visita.'],
+    dados: ['Escolha o ano e o mês.', 'Os gráficos mostram registros, ligações, visitas, Cias e naturezas.', 'Use “Imprimir relatório dos dados” para levar à reunião.'],
+    consulta: ['Pesquise por nome, BOPM, BOPC ou telefone.', 'Filtre por 1ª, 2ª ou 3ª visita.', 'Vincule links de fotos e relatórios à ocorrência.'],
+    mapa: ['Escolha o período e a Cia e clique em “Atualizar mapa”.', '“Mapa de calor” mostra onde há mais casos; “Pontos” mostra cada local.', 'Cada novo cadastro entra no mapa sozinho.'],
+    livro: ['As ocorrências com ligação feita aparecem para enviar.', 'Marque, escolha o policial e clique em “Enviar” — sem digitar.', 'Imprima preenchido ou em branco.'],
+    escala: ['Puxe os policiais do Efetivo ou digite.', 'Clique em “Gerar escala” e ajuste clicando nas células.', 'Salve no Drive ou imprima.'],
+    efetivo: ['Cadastre grad., RE, QRA e Cia.', 'Esses policiais aparecem nos seletores do Livro e da Escala.', 'Use “editar” ou “apagar” na lista.'],
+    rede: ['Serviços para orientar a vítima.', 'Em perigo agora: 190. Orientação 24 h: 180.'],
+    pop: ['Passo a passo do POP 2.09 para consulta rápida.', 'Sempre siga o POP vigente.'],
+    registro: ['Tudo o que é feito no sistema fica aqui, com conta e horário.', 'Ninguém consegue apagar.'],
+    falar: ['Roteiro de apoio, não obrigatório.', 'Adapte à conversa e ao momento da vítima.'],
+    exemplo: ['Um exemplo preenchido de cada aba (dados fictícios de teste).', 'Use para treinar a equipe.'],
+    admin: ['Libere as contas dos policiais.', 'Ajuste nome, batalhão e imagem.', 'Só você vê esta aba.']
+  };
+  function dicasLigadas() { return lerLocal('dicas', 'sim') === 'sim'; }
+  function dica(pg) {
+    var box = document.getElementById('tutorial'), lista = DICAS[pg];
+    document.getElementById('btDicas').textContent = '💡 Dicas: ' + (dicasLigadas() ? 'ligadas' : 'desligadas');
+    if (!lista || !dicasLigadas()) { box.classList.add('hidden'); return; }
+    box.innerHTML = '<strong>💡 Como usar</strong><ol>' + lista.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol>' +
+      '<button type="button" class="tutorial-fechar" title="Desligar dicas" aria-label="Desligar dicas">✕</button>';
+    box.classList.remove('hidden');
+    box.querySelector('.tutorial-fechar').onclick = function () { gravarLocal('dicas', 'nao'); dica(pg); };
+  }
+  var PAGINA = 'sala';
+  document.getElementById('btDicas').onclick = function () { gravarLocal('dicas', dicasLigadas() ? 'nao' : 'sim'); dica(PAGINA); };
+
+  /* ---------- botão flutuante de impressão (todas as abas) ---------- */
+  document.getElementById('btImprimirFlutuante').onclick = function () {
+    document.body.classList.add('impressao-geral');
+    window.print();
+    document.body.classList.remove('impressao-geral');
+  };
+
+  /* ---------- como falar com a vítima ---------- */
+  function bloco(t, itens, cls) { return '<div class="cartao ' + (cls || '') + '"><h2>' + esc(t) + '</h2><ul class="lista-dicas">' + itens.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>'; }
+  function telaFalar() {
+    C.innerHTML = titulo('Como Falar com a Vítima', 'Guia de apoio para a ligação e a visita. Não é obrigatório seguir à risca: adapte à conversa.') +
+      '<div class="dica"><b>Base:</b> Roteiro de Contato Telefônico do Programa Mulher Segura, POP 2.09 e programas do São Paulo Por Todas.</div>' +
+      '<div class="grade-2">' +
+      bloco('Antes de ligar', ['Leia o breve histórico e confira nome e telefone.', 'Esteja em local reservado, sem barulho.', 'Tenha a <b>Rede de Apoio</b> aberta para orientar.', 'Lembre: quem atende deve seguir até o fim, sem passar a vítima de um para outro.']) +
+      bloco('Postura', ['Fale com calma, voz baixa e frases curtas.', 'Ouça sem interromper e <b>sem julgar</b>.', 'Não culpe a vítima nem pressione para registrar BO.', 'Não peça para contar tudo de novo (evita revitimização).', 'Não prometa o que não pode cumprir.', 'Mantenha sigilo.']) +
+      '</div>' +
+      '<div class="cartao"><h2>Sequência sugerida da ligação</h2><div class="etapas">' +
+      [['1', 'Identificação', '“Bom dia/boa tarde. Eu poderia falar com a senhora [nome]?” → “Meu nome é [grad. e nome], sou policial militar do Programa Mulher Segura.”'],
+       ['2', 'Segurança primeiro', '“A senhora está sozinha? Pode conversar agora ou prefere que eu ligue em outro horário?” → “A senhora está correndo algum perigo neste momento?”<br><b>Se sim: encerre o roteiro e acione o 190.</b>'],
+       ['3', 'Motivo e autorização', '“Estou ligando para acompanhar a ocorrência do dia [data]. Posso fazer algumas perguntas sobre sua segurança?”'],
+       ['4', 'Situação atual', '“O autor está no mesmo local que a senhora?” → “Depois daquele dia, houve nova ameaça, agressão ou discussão?” → “Como a senhora está, física e emocionalmente?”'],
+       ['5', 'Orientações', '“A senhora conhece os aplicativos SOS Mulher e SP Mulher Segura?” Explique o botão do pânico (com medida protetiva), 190 e 180.'],
+       ['6', 'Visita', '“Gostaria de receber uma visita da Patrulha Mulher Segura? Qual o melhor dia e horário?” (13h às 19h) → “Gostaria de receber uma nova ligação?”'],
+       ['7', 'Encerramento', '“Agradeço por conversar comigo. A senhora não precisa enfrentar isso sozinha. Se houver nova ameaça, agressão, aproximação do autor ou descumprimento da medida, acione imediatamente a Polícia Militar.”']]
+        .map(function (e) { return '<div class="etapa"><span>' + e[0] + '</span><div><b>' + e[1] + '</b><p>' + e[2] + '</p></div></div>'; }).join('') + '</div></div>' +
+      '<div class="grade-2">' +
+      bloco('Sinais de alto risco → 190 e prioridade', ['Ameaça de morte ou uso/posse de arma.', 'Tentativa de enforcamento ou estrangulamento.', 'Agressões cada vez mais frequentes ou graves.', 'Perseguição, ciúme excessivo ou controle.', 'Separação recente ou descumprimento de medida protetiva.', 'Agressão durante a gravidez ou contra os filhos.', 'Ela diz que tem medo de morrer.'], 'alerta-cartao') +
+      bloco('Frases que ajudam', ['“A senhora não tem culpa do que aconteceu.”', '“Estamos aqui para ajudar, no seu tempo.”', '“Se não puder falar, responda só sim ou não.”', '“Quer que eu ligue em outro horário mais seguro?”']) +
+      bloco('Evite', ['“Por que a senhora não saiu de casa?”', '“Mas ele é o pai dos seus filhos…”', 'Dar opinião sobre a relação.', 'Comentar o caso com quem não participa do atendimento.']) +
+      bloco('Encaminhamentos', ['App <b>SP Mulher Segura</b> e <b>SOS Mulher</b> (botão do pânico com MPU).', '<b>190</b> emergência · <b>180</b> orientação 24 h.', '<b>DDM / DDM Online</b> para registrar ocorrência.', '<b>Casa Abrigo</b> em risco iminente; <b>Auxílio-Aluguel</b> (R$ 500) com MPU.']) +
+      '</div>' +
+      '<div class="dica">Depois da ligação, registre tudo em <b>Contato com as Vítimas</b>. Se ela aceitou visita, a visita aparece em <b>Acompanhamento</b>.</div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  /* ---------- exemplos preenchidos de cada aba (dados fictícios) ---------- */
+  function det(pares) { return '<div class="detail-grid">' + pares.map(function (p) { return '<div class="detail-item' + (p[2] ? ' wide' : '') + '"><span>' + esc(p[0]) + '</span><strong>' + esc(p[1]) + '</strong></div>'; }).join('') + '</div>'; }
+  function ex(n, t, txt, corpo) { return '<div class="cartao exemplo"><div class="exemplo-topo"><span class="exemplo-num">' + n + '</span><div><h2>' + esc(t) + '</h2><p class="desc">' + txt + '</p></div></div>' + corpo + '</div>'; }
+  function telaExemplo() {
+    var tab = function (cab, linhas) { return '<div class="rolar"><table class="tabela"><tr>' + cab.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr>' + linhas.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>'; };
+    C.innerHTML = titulo('Exemplos e Tutorial', 'Um exemplo de cada aba, com dados fictícios de TESTE no Jabaquara. Nada aqui é gravado no sistema.') +
+      '<div class="dica"><b>Caminho de uma ocorrência:</b> 1 Cadastro → 2 Contato → 3 Acompanhamento → 7 Livro de Registro. Os números (4, 5 e 6) mostram tudo isso em gráficos, buscas e no mapa.</div>' +
+      ex(1, 'Cadastro Sala de Operações', 'A Sala de Operações registra o que veio no boletim. Ao clicar em <b>Cadastrar ocorrência</b>, ela ganha o protocolo <b>00001</b> e já vai para o mapa.',
+        det([['Data', '27/10/2026'], ['QTR (hora)', '14:30'], ['Origem', 'BOPM'], ['BOPM', 'TESTE-0001/2026'], ['Nome da vítima', 'MARIA TESTE DA SILVA'], ['Nome do autor', 'JOÃO TESTE'],
+          ['Telefone', '(11) 90000-0000'], ['Natureza', 'AMEAÇA'], ['Autor preso', 'NÃO'], ['Medida protetiva', 'SIM'], ['Nº da medida', 'TESTE-123/2026'], ['Reincidência', 'NÃO'],
+          ['Método de pesquisa', 'FILTRO POR BOPM'], ['Cia', '1ª CIA'], ['Bairro', 'JABAQUARA'], ['Endereço', 'RUA EXEMPLO DE TESTE, 100 — JABAQUARA', 1],
+          ['Breve histórico', 'Vítima relata ameaças por mensagem após a separação. Medida protetiva vigente. (EXEMPLO DE TESTE)', 1]])) +
+      ex(2, 'Contato com as Vítimas', 'O policial abre a ocorrência na lista, liga (veja <b>Como Falar com a Vítima</b>) e registra:',
+        det([['Ligação realizada', 'SIM'], ['Resultado', 'ATENDEU E ACEITOU O CONTATO'], ['Aceitou o contato', 'SIM'], ['Deseja visita', 'SIM'], ['Tipo de visita', 'VISITA SOLIDÁRIA'],
+          ['Dia da visita', '29/10/2026'], ['Hora', '15:00'], ['Novo telefone', '—'], ['Observações', 'Orientada sobre o app SP Mulher Segura e o 190. (TESTE)', 1]])) +
+      ex(3, 'Acompanhamento', 'A visita marcada aparece aqui. Ao concluir, informe o resultado, o BO-e e anexe o FONAR.',
+        '<div class="visit-card" style="max-width:520px"><div class="visit-badges"><span class="sequence-badge">1ª VISITA</span><span class="status-pill">ABERTA</span></div><h3>MARIA TESTE DA SILVA</h3>' +
+        '<div class="schedule">📅 29/10/2026 · 15:00</div><p>RUA EXEMPLO DE TESTE, 100 — JABAQUARA · 1ª CIA</p><p>Resultado ao concluir: ORIENTAÇÕES PRESTADAS · BO-e TESTE-555/2026 · FONAR anexado</p></div>') +
+      ex(4, 'Dados Numéricos', 'Escolha ano e mês. Exemplo de resumo do mês:',
+        '<div class="kpi-grid"><div class="card kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value">12</div></div><div class="card kpi-card"><div class="kpi-label">Ligações</div><div class="kpi-value">10</div></div><div class="card kpi-card"><div class="kpi-label">Visitas realizadas</div><div class="kpi-value">7</div></div><div class="card kpi-card"><div class="kpi-label">1ª Cia</div><div class="kpi-value">5</div></div><div class="card kpi-card"><div class="kpi-label">Medidas protetivas</div><div class="kpi-value">4</div></div></div>') +
+      ex(5, 'Consulta', 'Busca por “MARIA TESTE” ou “TESTE-0001”. Na ocorrência você vincula links de fotos e relatórios.',
+        tab(['Nº', 'Data', 'Vítima', 'BOPM', 'Cia', 'Visitas', 'Arquivos'], [['00001', '27/10/2026', 'MARIA TESTE DA SILVA', 'TESTE-0001/2026', '1ª CIA', '1 de 3', '2 links']])) +
+      ex(6, 'Mapa Estatístico', 'Escolha o período e clique em <b>Atualizar mapa</b>. O ponto do exemplo apareceria no Jabaquara; várias ocorrências próximas formam a “mancha” do mapa de calor.',
+        '<div class="mapa-exemplo"><span class="ponto" style="left:46%;top:52%"></span><span class="calor" style="left:40%;top:45%"></span><span class="calor fraco" style="left:62%;top:30%"></span><small>Ilustração</small></div>') +
+      ex(7, 'Livro de Registro', 'A ocorrência com ligação aparece para enviar. Marque, escolha o policial e clique em <b>Enviar</b>. O livro fica assim:',
+        tab(COL_LIVRO, [['00001', '27/10/2026', '(11) 90000-0000', 'MARIA TESTE DA SILVA', 'AMEAÇA', 'ATENDEU E ACEITOU O CONTATO', 'SIM', '29/10/2026 15:00', '000000-0', 'TESTE', '27/10/2026 16:10', '1ª CIA', '']])) +
+      ex(8, 'Gerador de Escala', 'Puxe o efetivo, gere e ajuste clicando nas células:',
+        tab(['Dia da semana', 'Dia', 'Viatura', 'Horário', 'Grad.', 'RE', 'QRA'], [['Segunda-feira', '2nov.', '1ª Cia', '10h00 às 22h00', 'SD', '000000-0', 'TESTE'], ['', '', '', '', 'CB', '111111-1', 'EXEMPLO']])) +
+      ex(9, 'Efetivo', 'Cadastro dos policiais usados nos seletores:', tab(['Cia', 'Grad.', 'RE', 'QRA'], [['1ª CIA', 'SD', '000000-0', 'TESTE'], ['1ª CIA', 'CB', '111111-1', 'EXEMPLO']])) +
+      ex(10, 'Rede de Apoio e 11 POP 2.09', 'Consulta rápida para orientar a vítima e seguir o procedimento. Não precisa preencher nada.', '') +
+      ex(12, 'Registro de Edições', 'Cada ação fica gravada e ninguém apaga:',
+        tab(['Data/hora', 'Conta', 'Ação', 'Módulo', 'Descrição'], [['27/10/2026 14:31', 'policial@exemplo.com', 'CADASTRO SALA', 'Mulher Segura', 'ID TESTE — nova ocorrência'], ['27/10/2026 16:10', 'policial@exemplo.com', 'CONTATO VÍTIMA', 'Mulher Segura', 'ID TESTE — contato registrado']])) +
+      ex(13, 'Como Falar com a Vítima', 'Guia de apoio com a sequência da ligação, frases úteis e sinais de risco.', '') +
+      '<div class="dica">Quer guardar este tutorial em PDF? Clique na impressora 🖨 no canto da tela e escolha <b>Salvar como PDF</b>.</div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
   /* ---------- ligação com as páginas Mulher Segura ---------- */
-  var TELAS = { livro: telaLivro, escala: telaEscala, efetivo: telaEfetivo, rede: telaRede, pop: telaPop, registro: telaRegistro, admin: telaAdmin };
+  var TELAS = { livro: telaLivro, escala: telaEscala, efetivo: telaEfetivo, rede: telaRede, pop: telaPop, registro: telaRegistro, admin: telaAdmin, falar: telaFalar, exemplo: telaExemplo };
   window.Extras = {
     abrir: function (pg) { NAV++; C.removeAttribute('data-prot'); (TELAS[pg] || telaRede)(); },
+    dica: function (pg) { PAGINA = pg; dica(pg); },
     iniciar: function (boot) {
+      dica(PAGINA);
       srv('iniciar').then(function (r) {
         EMAIL = r.email || ''; CONFIG = r.config || CONFIG; DONO = !!r.dono;
         document.getElementById('menuAdmin').classList.toggle('hidden', !DONO);
+        document.body.classList.toggle('eh-admin', DONO);
         aplicaConfig();
       }).catch(function () { });
     }

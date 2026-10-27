@@ -52,7 +52,7 @@ function definirUrlRegistro() {
 const API_PERMITIDAS = ['getBootstrapData', 'salvarCadastroSala', 'getPendingContacts', 'salvarContatoVitima', 'getContactReportData',
   'getOpenVisits', 'salvarAcompanhamento', 'getConsulta', 'getOccurrenceSummary', 'salvarArquivos', 'excluirOcorrencia',
   'getDashboardData', 'getMapStatisticalData', 'geocodificarPendentesMapa', 'salvarLimitesMapaImportados', 'livroLer', 'livroEnviar'];
-const API_SO_DONO = ['excluirOcorrencia', 'salvarLimitesMapaImportados'];
+const API_SO_DONO = ['excluirOcorrencia', 'salvarLimitesMapaImportados', 'geocodificarPendentesMapa'];
 
 function doPost(e) {
   let r;

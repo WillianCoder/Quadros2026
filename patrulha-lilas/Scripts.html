@@ -237,6 +237,7 @@
       document.getElementById('pageTitle').textContent = pageMeta[page][0];
       document.getElementById('pageSubtitle').textContent = pageMeta[page][1];
     }
+    if (window.Extras) window.Extras.dica(page);
     if (window.innerWidth < 980) document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth' });
     await refreshCurrentPage();
   }

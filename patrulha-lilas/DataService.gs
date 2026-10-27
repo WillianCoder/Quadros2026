@@ -32,6 +32,8 @@ function salvarCadastroSala(payload) {
     const targetRow = Math.max(sheet.getLastRow() + 1, APP_CONFIG.DATA_START_ROW);
     sheet.getRange(targetRow, 1, 1, TOTAL_COLUMNS).setValues([recordToRow_(record)]);
     audit_('CADASTRO SALA', record.id, 'Nova ocorrência cadastrada sem dados sensíveis no log.');
+    // já coloca no mapa: localiza o endereço na hora do cadastro
+    try { geocodeRecordsForMap_([record], ensureMapGeoSheet_(getSpreadsheet_()), 1, false); } catch (e) { console.error('Mapa: ' + e.message); }
 
     return {
       success: true,
