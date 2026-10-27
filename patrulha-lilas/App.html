@@ -584,8 +584,7 @@
   }
   function logoUrl(i) { var u = (CONFIG.logos || [])[i] || ''; return /^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+$/.test(u) ? u : ''; }
   function aplicaConfig() {
-    document.getElementById('subUnidade').textContent = [CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ');
-    document.getElementById('nomeSistema').textContent = CONFIG.nome || 'Patrulha Lilás';
+    document.getElementById('nomeSistema').textContent = CONFIG.nome || 'Mulher Segura';
     document.title = CONFIG.nome || 'Patrulha Lilás';
     document.getElementById('heroBatalhao').textContent = CONFIG.batalhao || 'PMESP';
     var l1 = logoUrl(0);
