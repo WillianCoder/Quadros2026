@@ -64,27 +64,34 @@ function doPost(e) {
     const req = JSON.parse(e.postData.contents);
     const email = emailDoToken_(req.token);
     if (!email) throw new Error('Conta não identificada.');
+    // o dono é a conta que publicou o Registro; o e-mail dele não fica escrito no código
+    const dono = email.toLowerCase() === String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
+    const quem = dono ? 'Administrador' : email;
     const sh = SpreadsheetApp.openById(PROPS.getProperty('LOG_ID')).getSheetByName('Registro');
     const agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
 
     if (req.acao === 'registrar') {
       const d = req.dados || {};
-      sh.appendRow([agora, email, limpa_(d.acao), limpa_(d.modulo), limpa_(d.descricao), limpa_(d.link)]);
+      sh.appendRow([agora, quem, limpa_(d.acao), limpa_(d.modulo), limpa_(d.descricao), limpa_(d.link)]);
       r = { ok: true };
     } else if (req.acao === 'listar') {
       const n = sh.getLastRow();
       const ini = Math.max(2, n - 499);
       const vals = n >= 2 ? sh.getRange(ini, 1, n - ini + 1, 6).getDisplayValues().reverse() : [];
+      const donoEmail = String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
+      vals.forEach(l => { if (String(l[1]).toLowerCase() === donoEmail) l[1] = 'Administrador'; });
       r = { ok: true, linhas: vals, url: SpreadsheetApp.openById(PROPS.getProperty('LOG_ID')).getUrl() };
+    } else if (req.acao === 'souDono') {
+      r = { ok: true, dono: dono };
     } else if (req.acao === 'admin') {
-      const ok = hash_(String(req.senha || '')) === PROPS.getProperty('ADMIN_HASH');
-      sh.appendRow([agora, email, ok ? 'Login admin' : 'Tentativa de login admin (senha errada)', 'Admin', '', '']);
-      if (!ok) throw new Error('Senha incorreta.');
+      // painel do administrador: só a conta dona (o login do Google é a senha)
+      if (!dono) { sh.appendRow([agora, quem, 'Tentativa de acesso ao administrador', 'Admin', '', '']); throw new Error('Área restrita ao administrador.'); }
+      if (!req.config && !req.logo) sh.appendRow([agora, quem, 'Abriu o painel do administrador', 'Admin', '', '']);
       if (req.config) {
         const c = lerConfig_();
         ['nome', 'batalhao', 'unidade', 'subunidade', 'cidade'].forEach(k => { if (req.config[k] != null) c[k] = String(req.config[k]).slice(0, 200); });
         PROPS.setProperty('CONFIG', JSON.stringify(c));
-        sh.appendRow([agora, email, 'Alterou configurações', 'Admin', 'Cabeçalho/unidade', '']);
+        sh.appendRow([agora, quem, 'Alterou configurações', 'Admin', 'Cabeçalho/unidade', '']);
       }
       if (req.logo) {
         const c = lerConfig_(), pos = req.logo.pos === 2 ? 1 : 0;
@@ -99,7 +106,7 @@ function doPost(e) {
           c.logos[pos] = 'https://lh3.googleusercontent.com/d/' + f.getId();
         }
         PROPS.setProperty('CONFIG', JSON.stringify(c));
-        sh.appendRow([agora, email, req.logo.remover ? 'Removeu logo ' + (pos + 1) : 'Enviou logo ' + (pos + 1), 'Admin', '', c.logos[pos]]);
+        sh.appendRow([agora, quem, req.logo.remover ? 'Removeu logo ' + (pos + 1) : 'Enviou logo ' + (pos + 1), 'Admin', '', c.logos[pos]]);
       }
       r = { ok: true, config: lerConfig_() };
     } else if (req.acao === 'protocolo') {
@@ -122,7 +129,7 @@ function doPost(e) {
           if (!String(p.qra || '').trim()) throw new Error('Informe o QRA.');
           ef.appendRow([limpa_(p.grad).toUpperCase(), re, limpa_(p.qra).toUpperCase(), limpa_(p.cia)]);
         }
-        sh.appendRow([agora, email, req.op === 'add' ? 'Cadastrou/alterou policial' : 'Apagou policial do efetivo', 'Efetivo',
+        sh.appendRow([agora, quem, req.op === 'add' ? 'Cadastrou/alterou policial' : 'Apagou policial do efetivo', 'Efetivo',
           [p.grad, re, p.qra, p.cia].filter(String).join(' '), '']);
       }
       r = { ok: true, lista: lerEfetivo_(ef) };
@@ -172,7 +179,9 @@ function chamarRegistro_(payload) {
 }
 
 function iniciar() {
-  return { email: Session.getActiveUser().getEmail(), config: lerConfig_(), pasta: pasta_([]).getUrl() };
+  let dono = false;
+  try { dono = !!chamarRegistro_({ acao: 'souDono' }).dono; } catch (e) { }
+  return { email: Session.getActiveUser().getEmail(), config: lerConfig_(), pasta: pasta_([]).getUrl(), dono: dono };
 }
 
 /** Salva relatório (PDF + dados) no Drive de quem está logado, organizado por módulo/mês. */
@@ -278,7 +287,7 @@ function pasta_(partes) {
   return p;
 }
 function lerConfig_() {
-  const padrao = { nome: 'Patrulha Lilás', batalhao: '', unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo', logos: ['', ''] };
+  const padrao = { nome: 'Patrulha Lilás', batalhao: '3º BPM/M', unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo', logos: ['', ''] };
   try { return Object.assign(padrao, JSON.parse(PROPS.getProperty('CONFIG') || '{}')); } catch (e) { return padrao; }
 }
 function limpa_(s) { s = String(s == null ? '' : s).slice(0, 2000); return /^[=+\-@]/.test(s) ? "'" + s : s; } // evita fórmula na planilha

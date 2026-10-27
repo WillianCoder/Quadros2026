@@ -2,8 +2,10 @@
 (function () {
   'use strict';
   var C = document.getElementById('conteudo');
-  var CONFIG = { unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo' };
-  var EMAIL = '';
+  var CONFIG = { batalhao: '3º BPM/M', unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Patrulha Mulher Segura', cidade: 'São Paulo' };
+  var EMAIL = '', DONO = false, NAV = 0;
+  // só aplica a resposta se a pessoa ainda estiver na mesma página
+  function vivo(fn) { var n = NAV; return function () { if (n === NAV) return fn.apply(this, arguments); }; }
 
   /* ---------- servidor (ou modo demonstração fora do Google) ---------- */
   var DEMO = !(window.google && google.script && google.script.run);
@@ -18,7 +20,7 @@
   function demo(fn, a) {
     var reg = JSON.parse(localStorage.getItem('demoReg') || '[]');
     var log = function (acao, mod, d) { reg.unshift([new Date().toLocaleString('pt-BR'), 'demonstracao@local', acao, mod, d, '']); localStorage.setItem('demoReg', JSON.stringify(reg)); };
-    if (fn === 'iniciar') return { email: 'modo demonstração', config: CONFIG, pasta: '#' };
+    if (fn === 'iniciar') return { email: 'modo demonstração', config: CONFIG, pasta: '#', dono: true };
     if (fn === 'salvarDocumento') {
       var n = (+localStorage.getItem('demoProt') || 0) + 1; localStorage.setItem('demoProt', n); var prot = ('0000' + n).slice(-5);
       var oc = JSON.parse(localStorage.getItem('demoOc') || '[]'), lv = (a[3] && a[3].livro) || {}; lv.prot = prot;
@@ -38,7 +40,7 @@
       if (a[0] !== 'listar') { ef = ef.filter(function (p) { return p.re !== String(d.re).toUpperCase(); }); if (a[0] === 'add') ef.push({ grad: d.grad.toUpperCase(), re: String(d.re).toUpperCase(), qra: d.qra.toUpperCase(), cia: d.cia }); localStorage.setItem('demoEf', JSON.stringify(ef)); }
       return ef;
     }
-    if (fn === 'adminEntrar') { if (a[0] !== 'demo') throw new Error('Senha incorreta (no modo demonstração use: demo)'); if (a[1]) Object.assign(CONFIG, a[1]); return { config: CONFIG }; }
+    if (fn === 'adminEntrar') { if (a[1]) Object.assign(CONFIG, a[1]); return { config: CONFIG }; }
     return {};
   }
 
@@ -60,7 +62,8 @@
     document.body.classList.remove('modo-relatorio');
   }
   function btImprimir() { return '<button type="button" class="imprimir" data-acao="imprimir" title="Imprimir">🖨 imprimir</button>'; }
-  function titulo(t, d) { return '<div class="acoes nao-imprimir" style="margin:0"><div><h1>' + esc(t) + '</h1></div>' + btImprimir() + '</div>' + (d ? '<p class="desc tela">' + esc(d) + '</p>' : ''); }
+  function topo(t, d) { document.getElementById('pageTitle').textContent = t; document.getElementById('pageSubtitle').textContent = d || ''; }
+  function titulo(t, d) { topo(t, d); return '<div class="barra-pagina nao-imprimir">' + btImprimir() + '</div>'; }
 
   /* ---------- formulários declarativos ---------- */
   var SN = ['', 'Sim', 'Não'];
@@ -508,38 +511,36 @@
   /* ---------- drive / registro / admin ---------- */
   function telaDrive() {
     C.innerHTML = titulo('Meus documentos', 'Tudo o que você salva fica no SEU Google Drive, na pasta “Patrulha Lilás”, separado por assunto e mês.') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
-    srv('listarArquivos').then(function (r) {
+    srv('listarArquivos').then(vivo(function (r) {
       C.querySelector('.cartao').innerHTML = '<p><a class="bt sec" style="display:inline-flex;align-items:center;text-decoration:none" href="' + esc(r.pasta) + '" target="_blank" rel="noopener">📁 Abrir pasta no Google Drive</a></p>' +
         (r.arquivos.length ? '<div class="rolar"><table class="tabela"><tr><th>Pasta</th><th>Arquivo</th></tr>' + r.arquivos.map(function (a) { return '<tr><td>' + esc(a.caminho) + '</td><td><a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + esc(a.nome) + '</a></td></tr>'; }).join('') + '</table></div>' : '<p class="vazio">Nenhum documento salvo ainda.</p>');
-    }).catch(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    })).catch(vivo(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; }));
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
   }
   function telaRegistro() {
     C.innerHTML = titulo('Registro de edições', 'Histórico permanente: toda conta que salva ou altera algo fica registrada aqui. Todos podem ver; ninguém pode apagar.') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
-    srv('lerRegistro').then(function (r) {
+    srv('lerRegistro').then(vivo(function (r) {
       C.querySelector('.cartao').innerHTML = '<p class="nao-imprimir">🔒 <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Ver planilha original (somente leitura)</a> · últimos 500 registros</p>' +
         (r.linhas.length ? '<div class="rolar"><table class="tabela"><tr><th>Data/hora</th><th>Conta</th><th>Ação</th><th>Módulo</th><th>Descrição</th></tr>' +
           r.linhas.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td>' + esc(l[1]) + '</td><td>' + esc(l[2]) + '</td><td>' + esc(l[3]) + '</td><td>' + (l[5] && /^https:\/\//.test(l[5]) ? '<a href="' + esc(l[5]) + '" target="_blank" rel="noopener">' + esc(l[4]) + '</a>' : esc(l[4])) + '</td></tr>'; }).join('') + '</table></div>' : '<p class="vazio">Nenhum registro ainda.</p>');
-    }).catch(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    })).catch(vivo(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; }));
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
   }
   function telaAdmin() {
-    C.innerHTML = titulo('Administrador', 'Acesso restrito. Toda tentativa de login fica no registro.') +
-      '<div class="cartao" id="adm"><form id="fl"><div class="grade">' + campo(['senha', 'Senha do administrador', 'password']) + '</div><div class="acoes"><button class="bt">Entrar</button></div></form></div>';
+    C.innerHTML = titulo('Administrador', 'Visível somente para a conta dona do sistema. Toda alteração fica no registro.') +
+      '<div class="cartao" id="adm"><p class="vazio">Verificando sua conta…</p></div>';
     var senha = '';
-    document.getElementById('fl').onsubmit = function (e) {
-      e.preventDefault(); senha = document.getElementById('f_senha').value;
-      srv('adminEntrar', senha, null).then(mostrar).catch(function (er) { aviso('❌ ' + esc(er)); });
-    };
+    if (!DONO) { document.getElementById('adm').innerHTML = '<p class="vazio">Área restrita ao administrador.</p>'; return; }
+    srv('adminEntrar', '', null).then(mostrar).catch(function (er) { document.getElementById('adm').innerHTML = '<p class="vazio">❌ ' + esc(er) + '</p>'; });
     function mostrar(r) {
       var c = r.config || CONFIG;
       document.getElementById('adm').innerHTML = '<h2 style="margin-top:0">Cabeçalho dos relatórios</h2><form id="fc"><div class="grade">' +
         campo(['nome', 'Nome do sistema (ex.: Cabine Lilás)']) + campo(['batalhao', 'Batalhão (ex.: 3º BPM/M)']) +
         campo(['unidade', 'Linha 1 (instituição)', 'larga']) + campo(['subunidade', 'Linha 2 (unidade / programa)', 'larga']) + campo(['cidade', 'Cidade']) +
         '</div><div class="acoes"><button class="bt">💾 Salvar configurações</button></div></form>' +
-        '<h2>Logos (brasão PMESP e outro, ex.: batalhão ou programa)</h2><p class="desc">Aparecem pequenos no topo, nos relatórios impressos e bem clarinhos ao fundo. Use a imagem oficial em PNG com fundo transparente.</p><div class="grade">' +
-        [1, 2].map(function (n) { var u = logoUrl(n - 1); return '<div class="cartao" style="margin:0"><b>Logo ' + n + (n === 1 ? ' (esquerda)' : ' (direita)') + '</b><div style="height:70px;display:grid;place-items:center;margin:8px 0">' + (u ? '<img src="' + esc(u) + '" alt="" style="max-height:64px">' : '<span class="desc">sem logo</span>') + '</div><input type="file" accept="image/*" data-logo="' + n + '">' + (u ? '<button type="button" class="imprimir" style="margin-top:8px" data-tirar="' + n + '">remover</button>' : '') + '</div>'; }).join('') +
-        '</div><div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema. A planilha original fica no Drive do dono, protegida.</div>';
+        '<h2>Imagem da marca</h2><p class="desc">Aparece na barra lateral e no cartão do topo. Sem imagem enviada, fica a arte padrão da policial.</p><div class="grade">' +
+        [1].map(function (n) { var u = logoUrl(n - 1); return '<div class="cartao" style="margin:0"><b>Imagem atual</b><div style="height:70px;display:grid;place-items:center;margin:8px 0">' + (u ? '<img src="' + esc(u) + '" alt="" style="max-height:64px">' : '<span class="desc">sem logo</span>') + '</div><input type="file" accept="image/*" data-logo="' + n + '">' + (u ? '<button type="button" class="imprimir" style="margin-top:8px" data-tirar="' + n + '">remover</button>' : '') + '</div>'; }).join('') +
+        '</div><div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema. A planilha original fica no seu Drive, protegida. Seu e-mail aparece como “Administrador” para os outros usuários.</div>';
       ['nome', 'batalhao', 'unidade', 'subunidade', 'cidade'].forEach(function (k) { document.getElementById('f_' + k).value = c[k] || ''; });
       var depois = function (r2) { CONFIG = r2.config || CONFIG; aplicaConfig(); mostrar(r2); aviso('✅ Logo atualizado.'); };
       [].forEach.call(document.querySelectorAll('[data-logo]'), function (inp) {
@@ -562,49 +563,33 @@
     C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
   }
 
-  var ILUSTRACAO = '<svg class="ilus" viewBox="0 0 240 240" aria-hidden="true">' +
-    '<circle cx="120" cy="120" r="112" fill="rgba(255,255,255,.10)"/><circle cx="120" cy="120" r="86" fill="rgba(255,255,255,.08)"/>' +
-    '<path d="M120 26 196 52v58c0 52-32 88-76 106C76 198 44 162 44 110V52Z" fill="rgba(255,255,255,.16)" stroke="rgba(255,255,255,.85)" stroke-width="4"/>' +
-    // mulher (cabelo, rosto, ombros)
-    '<path d="M120 62c-24 0-38 18-38 40 0 16 4 30-6 44 14 4 28 2 36-6h16c8 8 22 10 36 6-10-14-6-28-6-44 0-22-14-40-38-40Z" fill="#fff" opacity=".95"/>' +
-    '<circle cx="120" cy="104" r="22" fill="var(--lilas-cl)"/>' +
-    '<path d="M74 196c4-30 22-46 46-46s42 16 46 46c-14 10-30 16-46 20-16-4-32-10-46-20Z" fill="#fff" opacity=".95"/>' +
-    // laço lilás (símbolo do enfrentamento à violência contra a mulher)
-    '<path d="M120 164c-8-10-20-10-20 0s12 14 20 8c8 6 20 2 20-8s-12-10-20 0Zm0 0-10 26m10-26 10 26" fill="none" stroke="var(--lilas)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
-    // estrela
-    '<path d="m198 40 4 8 9 1-6.5 6 1.5 9-8-4.5-8 4.5 1.5-9-6.5-6 9-1Z" fill="#fff"/></svg>';
   function telaInicio() {
     var a = [['vd', '💜 Violência doméstica', 'Atendimento e descumprimento de MPU'], ['sexual', '🛡️ Crime sexual', 'Acolhimento sem revitimização'], ['ligacao', '📞 Ligação Mulher Segura', 'Roteiro com 14 perguntas'],
-      ['visita', '🏡 Visita', 'Relatório da visita presencial'], ['livro', '📒 Livro de registro', 'Ligações lançadas'], ['escala', '📅 Escala', 'Gerar e editar a escala'], ['efetivo', '👮 Efetivo', 'Policiais, RE, QRA e Cia'],
+      ['visita', '🏡 Visita', 'Relatório da visita presencial'], ['livro', '📒 Livro de registro', 'Protocolos e impressão'], ['escala', '📅 Escala', 'Gerar e editar a escala'], ['efetivo', '👮 Efetivo', 'Policiais, RE, QRA e Cia'],
       ['rede', '🤝 Rede de apoio', 'Para orientar a vítima'], ['drive', '📁 Meus documentos', 'Tudo salvo no seu Drive']];
-    var lg = [0, 1].map(logoUrl).filter(Boolean).map(function (u) { return '<img src="' + esc(u) + '" alt="">'; }).join('');
     var hora = new Date().getHours(), saud = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-    C.innerHTML = '<section class="hero"><div class="hero-txt">' + (lg ? '<div class="hero-logos">' + lg + '</div>' : '') +
-      '<small>' + esc(CONFIG.unidade) + (CONFIG.batalhao ? ' · ' + esc(CONFIG.batalhao) : '') + '</small>' +
-      '<h1>' + esc(CONFIG.nome || 'Patrulha Lilás') + '</h1><p>' + esc(CONFIG.subunidade) + '</p>' +
-      '<p class="hero-ola">' + saud + (EMAIL ? ', ' + esc(EMAIL.split('@')[0]) : '') + '. Escolha abaixo o que precisa fazer.</p></div>' + ILUSTRACAO + '</section>' +
-      (DEMO ? '<div class="dica">Modo demonstração: aberto fora do Google Apps Script — nada é salvo no Drive.</div>' : '') +
-      '<div class="atalhos">' + a.map(function (x) { return '<a href="#' + x[0] + '"><b>' + x[1] + '</b><span>' + x[2] + '</span></a>'; }).join('') + '</div>' +
-      '<div class="cartao" style="margin-top:16px"><b>Em perigo agora?</b> Acione o <b>190</b>. Orientação 24 h: <b>180</b>.</div>';
+    topo(CONFIG.nome || 'Patrulha Lilás', saud + (EMAIL ? ', ' + EMAIL.split('@')[0] : '') + '. Escolha abaixo o que precisa fazer.');
+    C.innerHTML = (DEMO ? '<div class="dica">Modo demonstração: aberto fora do Google Apps Script — nada é salvo no Drive.</div>' : '') +
+      '<div class="info-banner"><strong>Em perigo agora?</strong><span>Acione o <b>190</b>. Orientação 24 h: <b>180</b>.</span></div>' +
+      '<div class="atalhos">' + a.map(function (x) { return '<a href="#' + x[0] + '"><b>' + x[1] + '</b><span>' + x[2] + '</span></a>'; }).join('') + '</div>';
   }
 
   /* ---------- navegação ---------- */
   var TELAS = { inicio: telaInicio, vd: function () { telaForm('vd'); }, sexual: function () { telaForm('sexual'); }, visita: function () { telaForm('visita'); }, ligacao: telaLigacao, livro: telaLivro, efetivo: telaEfetivo, escala: telaEscala, indicadores: telaIndicadores, pop: telaPop, rede: telaRede, drive: telaDrive, registro: telaRegistro, admin: telaAdmin };
   function navegar() {
     var pg = (location.hash || '#inicio').slice(1); if (!TELAS[pg]) pg = 'inicio';
-    [].forEach.call(document.querySelectorAll('.menu a'), function (a) { a.classList.toggle('ativo', a.getAttribute('data-pg') === pg); });
-    document.getElementById('menu').classList.remove('aberto');
-    C.removeAttribute('data-prot'); TELAS[pg](); C.focus(); window.scrollTo(0, 0);
+    [].forEach.call(document.querySelectorAll('.nav-menu a'), function (a) { a.classList.toggle('ativo', a.getAttribute('data-pg') === pg); });
+    fecharMenu();
+    NAV++; C.removeAttribute('data-prot'); TELAS[pg](); C.focus(); window.scrollTo(0, 0);
   }
   function logoUrl(i) { var u = (CONFIG.logos || [])[i] || ''; return /^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+$/.test(u) ? u : ''; }
   function aplicaConfig() {
     document.getElementById('subUnidade').textContent = [CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ');
     document.getElementById('nomeSistema').textContent = CONFIG.nome || 'Patrulha Lilás';
     document.title = CONFIG.nome || 'Patrulha Lilás';
-    var l1 = logoUrl(0), l2 = logoUrl(1);
-    var img = function (id, u) { var el = document.getElementById(id); if (u) { el.src = u; el.hidden = false; } else { el.hidden = true; el.removeAttribute('src'); } };
-    img('logo1', l1); img('logo2', l2); img('marcaDagua', l1);
-    document.getElementById('brasaoPadrao').style.display = l1 ? 'none' : '';
+    document.getElementById('heroBatalhao').textContent = CONFIG.batalhao || 'PMESP';
+    var l1 = logoUrl(0);
+    ['logo1', 'logoHero'].forEach(function (id) { var el = document.getElementById(id); if (!el.getAttribute('data-padrao')) el.setAttribute('data-padrao', el.src); el.src = l1 || el.getAttribute('data-padrao'); });
   }
 
   /* ---------- aparência: claro/escuro e temas (fica salvo neste navegador) ---------- */
@@ -635,10 +620,13 @@
     e.preventDefault(); try { history.replaceState(null, '', a.getAttribute('href')); } catch (x) { } navegar();
   });
   window.addEventListener('hashchange', navegar);
-  document.getElementById('btMenu').onclick = function () { document.getElementById('menu').classList.toggle('aberto'); };
+  function fecharMenu() { document.getElementById('menu').classList.remove('aberto'); document.getElementById('fundoMenu').hidden = true; }
+  document.getElementById('btMenu').onclick = function () { document.getElementById('menu').classList.add('aberto'); document.getElementById('fundoMenu').hidden = false; };
+  document.getElementById('btFechar').onclick = fecharMenu;
+  document.getElementById('fundoMenu').onclick = fecharMenu;
 
   navegar();
-  srv('iniciar').then(function (r) { EMAIL = r.email || ''; CONFIG = r.config || CONFIG; document.getElementById('usuario').textContent = EMAIL; aplicaConfig(); if ((location.hash || '#inicio') === '#inicio') telaInicio(); })
+  srv('iniciar').then(function (r) { EMAIL = r.email || ''; CONFIG = r.config || CONFIG; DONO = !!r.dono; document.getElementById('menuAdmin').hidden = !DONO; document.getElementById('usuario').textContent = EMAIL; aplicaConfig(); if ((location.hash || '#inicio') === '#inicio') telaInicio(); })
     .catch(function (e) { aviso('❌ ' + esc(e)); });
 })();
 </script>
