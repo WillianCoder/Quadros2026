@@ -318,6 +318,9 @@
     var raiz = document.documentElement, tema = lerLocal('tema', 'lilas'), modo = lerLocal('modo', 'auto');
     var escuro = modo === 'escuro' || (modo === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
     raiz.setAttribute('data-tema', tema); raiz.setAttribute('data-modo', escuro ? 'escuro' : 'claro');
+    var anima = lerLocal('anima', 'sim') === 'sim';
+    raiz.setAttribute('data-anima', anima ? 'sim' : 'nao');
+    var ch = document.getElementById('btAnima'); if (ch) ch.setAttribute('aria-checked', anima ? 'true' : 'false');
     [].forEach.call(document.querySelectorAll('.modos button'), function (b) { b.classList.toggle('sel', b.getAttribute('data-modo') === modo); });
     [].forEach.call(document.querySelectorAll('.cores button'), function (b) { b.classList.toggle('sel', b.getAttribute('data-tema') === tema); });
   }
@@ -328,6 +331,7 @@
     var b = e.target.closest('button'); if (!b) return;
     if (b.hasAttribute('data-modo')) gravarLocal('modo', b.getAttribute('data-modo'));
     if (b.hasAttribute('data-tema')) gravarLocal('tema', b.getAttribute('data-tema'));
+    if (b.id === 'btAnima') gravarLocal('anima', lerLocal('anima', 'sim') === 'sim' ? 'nao' : 'sim');
     aplicaAparencia();
   };
   document.addEventListener('click', function () { document.getElementById('painelTema').hidden = true; });
@@ -490,7 +494,7 @@
   var TELAS = { livro: telaLivro, escala: telaEscala, efetivo: telaEfetivo, rede: telaRede, pop: telaPop, registro: telaRegistro, admin: telaAdmin, falar: telaFalar, exemplo: telaExemplo };
   window.Extras = {
     abrir: function (pg) { NAV++; C.removeAttribute('data-prot'); (TELAS[pg] || telaRede)(); },
-    dica: function (pg) { PAGINA = pg; dica(pg); },
+    dica: function (pg) { PAGINA = pg; dica(pg); var b = document.querySelector('.nav-button.active'); if (b && window.innerWidth < 980) b.scrollIntoView({ inline: 'center', block: 'nearest' }); },
     iniciar: function (boot) {
       dica(PAGINA);
       srv('iniciar').then(function (r) {

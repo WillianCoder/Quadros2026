@@ -7,12 +7,17 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <?!= include('Styles'); ?>
   <?!= include('EstilosExtras'); ?>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <?!= include('Visual'); ?>
 </head>
 <body>
   <div id="loadingOverlay" class="loading-overlay">
     <div class="spinner"></div>
     <strong>Carregando o sistema...</strong>
   </div>
+
+  <div class="fundo-animado" aria-hidden="true"><span></span><span></span><span></span></div>
 
   <div class="app-shell">
     <aside class="sidebar">
@@ -70,6 +75,7 @@
             <div class="modos"><button type="button" data-modo="claro">☀️ Claro</button><button type="button" data-modo="escuro">🌙 Escuro</button><button type="button" data-modo="auto">Auto</button></div>
             <p>Tema</p>
             <div id="cores" class="cores"></div>
+            <div class="anima-linha"><span>✨ Fundo animado</span><button id="btAnima" class="chave" type="button" role="switch" aria-checked="true" aria-label="Ligar ou desligar o fundo animado"></button></div>
           </div>
         </div>
       </header>
