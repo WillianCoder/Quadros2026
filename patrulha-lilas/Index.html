@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="lilas">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <?!= include('Styles'); ?>
+  <?!= include('EstilosExtras'); ?>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <?!= include('Visual'); ?>
+</head>
+<body>
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <strong>Carregando o sistema...</strong>
+  </div>
+
+  <div class="fundo-animado" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark brand-mark-image"><img id="logo1" src="<?!= include('Marca'); ?>" alt="SP Mulher Segura" class="brand-mark-photo"></div>
+        <div>
+          <strong id="nomeSistema">Mulher Segura</strong>
+          <small>Controle operacional</small>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-button active" data-page="sala"><span>1</span> Cadastro Sala de Operações</button>
+        <button class="nav-button" data-page="contato"><span>2</span> Contato com as Vítimas</button>
+        <button class="nav-button" data-page="acompanhamento"><span>3</span> Acompanhamento</button>
+        <button class="nav-button" data-page="dados"><span>4</span> Dados Numéricos</button>
+        <button class="nav-button" data-page="consulta"><span>5</span> Consulta</button>
+        <button class="nav-button" data-page="mapa"><span>6</span> Mapa Estatístico</button>
+        <button class="nav-button" data-page="livro"><span>7</span> Livro de Registro</button>
+        <button class="nav-button" data-page="escala"><span>8</span> Gerador de Escala</button>
+        <button class="nav-button" data-page="efetivo"><span>9</span> Efetivo</button>
+        <button class="nav-button" data-page="rede"><span>10</span> Rede de Apoio</button>
+        <button class="nav-button" data-page="pop"><span>11</span> POP 2.09</button>
+        <button class="nav-button" data-page="registro"><span>12</span> Registro de Edições</button>
+        <button class="nav-button" data-page="falar"><span>13</span> Como Falar com a Vítima</button>
+        <button class="nav-button" data-page="exemplo"><span>14</span> Exemplos e Tutorial</button>
+        <button class="nav-button hidden" data-page="admin" id="menuAdmin"><span>15</span> Administrador</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <small>Usuário conectado</small>
+        <strong id="currentUser">—</strong>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar branded-topbar">
+        <div class="topbar-copy">
+          <span class="eyebrow">PROGRAMA MULHER SEGURA</span>
+          <h1 id="pageTitle">Cadastro Sala de Operações</h1>
+          <p id="pageSubtitle">Primeiro cadastro da ocorrência a partir do BOPM, BOPC ou outra fonte.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="brand-hero-card card">
+            <img id="logoHero" src="<?!= include('Marca'); ?>" alt="SP Mulher Segura" class="brand-hero-image">
+            <div class="brand-hero-copy">
+              <span>SP Mulher Segura</span>
+              <strong id="heroBatalhao">3º BPM/M</strong>
+              <small>Proteger, servir e empoderar</small>
+            </div>
+          </div>
+          <div class="topbar-buttons"><button id="refreshButton" class="button ghost" type="button">Atualizar página</button><button id="btTema" class="button ghost" type="button" title="Aparência: claro, escuro e temas">🎨 Aparência</button><button id="btDicas" class="button ghost" type="button" title="Ligar ou desligar as dicas de cada aba">💡 Dicas: ligadas</button></div>
+          <div id="painelTema" class="painel-tema" hidden>
+            <p>Aparência</p>
+            <div class="modos"><button type="button" data-modo="claro">☀️ Claro</button><button type="button" data-modo="escuro">🌙 Escuro</button><button type="button" data-modo="auto">Auto</button></div>
+            <p>Tema</p>
+            <div id="cores" class="cores"></div>
+            <div class="anima-linha"><span>✨ Fundo animado</span><button id="btAnima" class="chave" type="button" role="switch" aria-checked="true" aria-label="Ligar ou desligar o fundo animado"></button></div>
+          </div>
+        </div>
+      </header>
+
+      <div id="tutorial" class="tutorial hidden"></div>
+
+      <section id="page-extra" class="page"><div id="conteudo" class="conteudo" tabindex="-1"></div></section>
+
+      <section id="page-sala" class="page active">
+        <div class="info-banner">
+          <strong>Cadastro inicial</strong>
+          <span>A Sala de Operações deve registrar os dados disponíveis no boletim ou na fonte consultada. O breve histórico aceita texto livre.</span>
+        </div>
+        <form id="salaForm" class="card form-card">
+          <div id="salaFields" class="form-grid"></div>
+          <div class="form-actions">
+            <button class="button secondary" type="reset">Limpar</button>
+            <button class="button primary" type="submit">Cadastrar ocorrência</button>
+          </div>
+        </form>
+        <div id="salaSuccess" class="success-box hidden"></div>
+      </section>
+
+      <section id="page-contato" class="page">
+        <div class="info-banner schedule-policy-banner">
+          <strong>Horário para visitas</strong>
+          <span>Os agendamentos devem ser realizados exclusivamente no período das <b>13h00 às 19h00</b>.</span>
+        </div>
+        <div class="toolbar card">
+          <div class="field compact grow">
+            <label for="contactSearch">Localizar ocorrência pendente</label>
+            <input id="contactSearch" type="search" placeholder="Nome, autor, BOPM, BOPC ou telefone">
+          </div>
+          <button id="contactSearchButton" class="button primary" type="button">Pesquisar</button>
+          <button id="contactReportButton" class="button report-button" type="button">Imprimir relatório dos contatos</button>
+        </div>
+
+        <div class="split-layout">
+          <div class="card list-panel">
+            <div class="section-heading">
+              <div><span class="eyebrow">AGUARDANDO CONTATO</span><h2>Ocorrências pendentes</h2></div>
+              <span id="contactCount" class="counter">0</span>
+            </div>
+            <div id="contactList" class="record-list"></div>
+          </div>
+
+          <div class="card detail-panel">
+            <div id="contactEmpty" class="empty-state large">Selecione uma ocorrência para visualizar os dados cadastrados pela Sala de Operações.</div>
+            <div id="contactWorkspace" class="hidden">
+              <div class="section-heading"><div><span class="eyebrow">DADOS DA OCORRÊNCIA</span><h2 id="contactVictimTitle">—</h2></div><span id="contactIdBadge" class="badge">—</span></div>
+              <div id="contactSourceDetails" class="detail-grid"></div>
+              <hr>
+              <form id="contactForm">
+                <input id="contactRecordId" type="hidden">
+                <div id="contactFields" class="form-grid compact-grid"></div>
+                <div class="form-actions"><button class="button primary" type="submit">Salvar contato</button></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-acompanhamento" class="page">
+        <div class="toolbar card">
+          <div class="field compact grow"><label for="visitSearch">Pesquisar visita aberta</label><input id="visitSearch" type="search" placeholder="Nome, endereço, bairro ou telefone"></div>
+          <div class="field compact"><label for="visitCia">CIA</label><select id="visitCia"><option value="">TODAS</option></select></div>
+          <button id="visitSearchButton" class="button primary" type="button">Pesquisar</button>
+          <button id="visitReportButton" class="button report-button" type="button">Imprimir relatório das visitas</button>
+        </div>
+        <div class="info-banner deadline-policy-banner">
+          <strong>Prazo para a 2ª visita</strong>
+          <span>Quando houver continuidade após a 1ª visita, a <b>2ª visita deve ser agendada em até 20 dias</b> após a realização da primeira. O sistema mostrará o prazo e bloqueará datas posteriores ao limite.</span>
+        </div>
+        <div class="card">
+          <div class="section-heading">
+            <div><span class="eyebrow">AGENDA OPERACIONAL</span><h2>Visitas em aberto</h2><p>Use “Atualizar / Concluir” para alterar ou encerrar a visita atual. A opção de continuidade gera somente a 2ª ou a 3ª visita; não existe opção para uma 4ª visita.</p></div>
+            <span id="visitCount" class="counter">0</span>
+          </div>
+          <div id="openVisits" class="visit-grid"></div>
+        </div>
+      </section>
+
+      <section id="page-dados" class="page">
+        <div class="toolbar card">
+          <div class="field compact"><label for="dashboardYear">Ano de referência</label><select id="dashboardYear"></select></div>
+          <div class="field compact"><label for="dashboardMonth">Mês</label><select id="dashboardMonth"></select></div>
+          <button id="dashboardRefresh" class="button primary" type="button">Atualizar painel</button>
+          <button id="dashboardPrintButton" class="button report-button" type="button">Imprimir relatório dos dados</button>
+          <span id="dashboardUpdated" class="muted push-right"></span>
+        </div>
+        <div id="kpiGrid" class="kpi-grid"></div>
+        <div class="dashboard-grid">
+          <div class="card panel wide-panel"><div class="section-heading"><div><span class="eyebrow">RESUMO MENSAL</span><h2>Registros, ligações e visitas realizadas</h2></div></div><div id="monthlyChart" class="multi-chart"></div></div>
+          <div class="card panel"><div class="section-heading"><div><span class="eyebrow">TIPOS</span><h2>Visitas realizadas</h2></div></div><div id="visitTypeChart" class="bar-list"></div></div>
+          <div class="card panel"><div class="section-heading"><div><span class="eyebrow">COMPANHIAS</span><h2>Quantidade por CIA</h2></div></div><div id="ciaChart" class="bar-list"></div></div>
+          <div class="card panel"><div class="section-heading"><div><span class="eyebrow">RESULTADOS</span><h2>Resultado dos atendimentos</h2></div></div><div id="resultChart" class="bar-list"></div></div>
+          <div class="card panel"><div class="section-heading"><div><span class="eyebrow">NATUREZAS</span><h2>Natureza das ocorrências</h2></div></div><div id="natureChart" class="bar-list"></div></div>
+          <div class="card panel wide-panel"><div class="section-heading"><div><span class="eyebrow">CIA POR MÊS</span><h2>Distribuição mensal das ocorrências</h2></div></div><div id="ciaMonthTable" class="table-wrapper"></div></div>
+        </div>
+      </section>
+
+      <section id="page-consulta" class="page">
+        <div class="toolbar card wrap-toolbar">
+          <div class="field compact"><label for="queryYear">Ano</label><select id="queryYear"></select></div>
+          <div class="field compact"><label for="queryMonth">Mês</label><select id="queryMonth"></select></div>
+          <fieldset class="visit-filter-field checkbox-filter-box">
+            <legend>Visitas realizadas</legend>
+            <div class="visit-checkbox-options">
+              <label class="checkbox-field visit-filter-check"><input id="queryVisit1" type="checkbox" value="1"><span>1ª Visita Realizada</span></label>
+              <label class="checkbox-field visit-filter-check"><input id="queryVisit2" type="checkbox" value="2"><span>2ª Visita Realizada</span></label>
+              <label class="checkbox-field visit-filter-check"><input id="queryVisit3" type="checkbox" value="3"><span>3ª Visita Realizada</span></label>
+            </div>
+            <small class="field-hint">Marque uma ou mais opções. O limite é de 3 visitas por ocorrência.</small>
+          </fieldset>
+          <div class="field compact grow"><label for="querySearch">Nome da pessoa ou boletim</label><input id="querySearch" type="search" placeholder="Vítima, autor, BOPM ou BOPC"></div>
+          <label class="checkbox-field"><input id="queryOnlyFiles" type="checkbox"><span>Somente com arquivos</span></label>
+          <button id="queryButton" class="button primary" type="button">Consultar</button>
+        </div>
+        <div class="card table-card">
+          <div class="section-heading"><div><span class="eyebrow">BASE DE OCORRÊNCIAS</span><h2>Registros cadastrados</h2></div><span id="queryCount" class="counter">0</span></div>
+          <div id="queryTable" class="table-wrapper"></div>
+        </div>
+      </section>
+
+      <section id="page-mapa" class="page">
+        <div class="info-banner map-info-banner">
+          <strong>Análise territorial</strong>
+          <span>Os mapas utilizam somente ocorrências das áreas do <b>3º BPM/M – 1ª, 2ª e 3ª Cia</b>. Os limites são carregados diretamente da camada do <b>3º BPM/M</b> do mapa informado. Nomes, telefones e históricos das vítimas não são exibidos nesta página.</span>
+          <a id="mapSourceLink" class="map-source-link so-admin" href="#" target="_blank" rel="noopener noreferrer">Abrir mapa do 3º BPM/M</a>
+        </div>
+
+        <div class="toolbar card map-toolbar">
+          <div class="field compact"><label for="mapDateFrom">Data inicial</label><input id="mapDateFrom" type="date"></div>
+          <div class="field compact"><label for="mapDateTo">Data final</label><input id="mapDateTo" type="date"></div>
+          <div class="field compact map-cia-field"><label for="mapCia">CIA</label><select id="mapCia"></select></div>
+          <button id="mapSearchButton" class="button primary" type="button">🔄 Atualizar mapa</button>
+          <button id="mapGeocodeButton" class="button secondary so-admin" type="button">Processar endereços pendentes</button>
+          <button id="mapBoundaryAutoButton" class="button ghost map-import-action so-admin" type="button">Baixar KML completo do 3º BPM/M</button>
+          <button id="mapBoundaryChooseButton" class="button ghost map-import-action so-admin" type="button">Importar KML/KMZ completo</button>
+          <input id="mapBoundaryFile" class="hidden-file-input" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip">
+        </div>
+
+        <div id="mapBoundaryStatus" class="map-boundary-status checking so-admin">
+          <strong>Verificando limites territoriais…</strong>
+          <span>A Página 6 carregará automaticamente os limites já salvos.</span>
+        </div>
+
+        <div id="mapImportGuidance" class="map-import-guidance so-admin">
+          <strong>Primeira configuração:</strong> a importação do KML/KMZ completo é feita somente uma vez. Depois que os polígonos forem salvos na aba <code>MAPA LIMITES</code>, o sistema os carregará automaticamente em todos os acessos. Arquivos que contenham somente NetworkLink não possuem os polígonos.
+        </div>
+
+        <div id="mapWarning" class="warning-box hidden"></div>
+        <div id="mapSummary" class="map-summary-grid"></div>
+
+        <div class="card map-card">
+          <div class="section-heading map-heading">
+            <div>
+              <span class="eyebrow">MAPA ESTATÍSTICO</span>
+              <h2 id="mapResultTitle">Ocorrências por localização</h2>
+              <p id="mapResultSubtitle">Selecione o período e a CIA e clique em Pesquisar.</p>
+            </div>
+            <span id="mapUpdated" class="muted"></span>
+          </div>
+
+          <div class="map-tabs" role="tablist" aria-label="Tipo de mapa">
+            <button class="map-tab active" data-map-tab="heat" type="button">Mapa de Calor</button>
+            <button class="map-tab" data-map-tab="points" type="button">Mapa de Pontos</button>
+          </div>
+
+          <div id="map-panel-heat" class="map-panel active">
+            <div id="heatMap" class="stat-map" aria-label="Mapa de calor das ocorrências"></div>
+            <div class="map-legend heat-legend">
+              <strong>Intensidade</strong>
+              <span class="heat-scale"></span>
+              <div><small>Menor concentração</small><small>Maior concentração</small></div>
+            </div>
+          </div>
+
+          <div id="map-panel-points" class="map-panel">
+            <div id="pointsMap" class="stat-map" aria-label="Mapa de pontos das ocorrências"></div>
+            <div class="map-legend point-legend">
+              <strong>Quantidade no mesmo local</strong>
+              <span><i class="legend-circle green">1</i> 1 ocorrência</span>
+              <span><i class="legend-circle orange">2</i> 2 ocorrências</span>
+              <span><i class="legend-circle red">3+</i> 3 ou mais ocorrências</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="contactReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="contactReportModalTitle">
+    <div class="modal-backdrop" data-close-modal="contactReportModal"></div>
+    <div class="modal-card report-modal-card">
+      <button class="modal-close" data-close-modal="contactReportModal" type="button">×</button>
+      <span class="eyebrow">RELATÓRIO PARA IMPRESSÃO</span>
+      <h2 id="contactReportModalTitle">Relatório dos contatos com as vítimas</h2>
+      <p class="modal-intro">O relatório incluirá somente as ocorrências que estão aparecendo neste momento em <strong>2. Contato com as Vítimas</strong>, respeitando a pesquisa aplicada.</p>
+      <form id="contactReportForm">
+        <div class="report-current-filter" style="display:flex;flex-direction:column;gap:5px;padding:14px 16px;margin:8px 0 14px;border:1px solid #dfcaea;border-left:5px solid #9258b4;border-radius:12px;background:#faf6fc;">
+          <span style="font-size:9px;font-weight:900;letter-spacing:.08em;color:#9258b4;">FILTRO ATUAL</span>
+          <strong id="contactReportFilterLabel" style="font-size:15px;color:#3d1f4d;">Todas as ocorrências pendentes</strong>
+          <small id="contactReportCountLabel" style="font-size:11px;color:#766b7d;">0 ocorrência(s) exibida(s)</small>
+        </div>
+        <div class="report-help-box"><strong>As ocorrências sairão em um único documento, uma abaixo da outra.</strong><span>Somente os registros visíveis na lista de Contato com as Vítimas serão incluídos.</span></div>
+        <div class="form-actions"><button class="button secondary" data-close-modal="contactReportModal" type="button">Cancelar</button><button class="button primary" type="submit">Gerar relatório das ocorrências exibidas</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="visitModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-modal="visitModal"></div>
+    <div class="modal-card visit-modal-card">
+      <button class="modal-close" data-close-modal="visitModal" type="button">×</button>
+      <span class="eyebrow">ATUALIZAR ACOMPANHAMENTO</span>
+      <h2 id="visitModalTitle">Visita</h2>
+
+      <div class="appointment-highlight">
+        <div>
+          <span class="appointment-label">VISITA ATUAL AGENDADA</span>
+          <strong id="visitAgendaDate">—</strong>
+        </div>
+        <div class="appointment-time-box">
+          <span>HORÁRIO</span>
+          <strong id="visitAgendaTime">—</strong>
+        </div>
+        <span id="visitSequenceBadge" class="sequence-badge">1ª VISITA</span>
+      </div>
+
+      <div id="visitModalSummary" class="detail-grid"></div>
+      <form id="visitForm">
+        <input id="visitRecordId" name="visitId" type="hidden">
+        <input id="visitOccurrenceId" name="occurrenceId" type="hidden">
+        <input id="visitCurrentSequence" name="sequencia" type="hidden" value="1">
+        <div class="form-grid compact-grid">
+          <div class="field full action-field"><label for="visitAction">Ação do acompanhamento *</label><select id="visitAction" required><option value="REAGENDAR">ATUALIZAR / REAGENDAR ESTA VISITA</option><option value="CONCLUIR">MARCAR COMO REALIZADA E ENCERRAR</option><option id="visitActionNextOption" value="CONCLUIR_NOVA">MARCAR COMO REALIZADA E AGENDAR A PRÓXIMA VISITA</option></select><small id="visitActionHelp">É permitido realizar no máximo 3 visitas por ocorrência.</small></div>
+          <div class="field"><label for="visitType">Tipo da visita atual *</label><select id="visitType" required></select></div>
+          <div class="field schedule-input"><label for="visitScheduledDate">Data agendada da visita atual *</label><input id="visitScheduledDate" type="date" required></div>
+          <div class="field schedule-input"><label for="visitScheduledTime">Horário agendado da visita atual *</label><input id="visitScheduledTime" type="time" required min="13:00" max="19:00" step="300"><small>Permitido das 13h00 às 19h00.</small></div>
+          <div class="field realized-field"><label for="visitRealizedDate">Data da realização *</label><input id="visitRealizedDate" type="date"></div>
+          <div class="field realized-field"><label for="visitRealizedTime">Hora da realização *</label><input id="visitRealizedTime" type="time"></div>
+          <div class="field wide realized-field"><label for="visitResult">Resultado da visita *</label><select id="visitResult"></select></div>
+          <div class="field realized-field"><label for="visitFonarPreenchido">Formulário FONAR preenchido? *</label><select id="visitFonarPreenchido"><option value="">SELECIONE</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select></div>
+          <div id="visitFonarUploadField" class="field wide realized-field hidden"><label for="visitFonarFile">Anexar formulário FONAR *</label><input id="visitFonarFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"><small>PDF, JPG, PNG, DOC ou DOCX, até 10 MB. Ao selecionar, o arquivo é enviado automaticamente para o Google Drive da conta de quem está anexando; o sistema guarda somente o link.</small><div id="existingFonarFile" class="existing-fonar-file"></div></div>
+          <div id="visitBoeNumberField" class="field realized-field hidden"><label for="visitBoeNumber">Nº do BO-e de visita complementar * <span class="required-note">OBRIGATÓRIO PARA CONCLUIR</span></label><input id="visitBoeNumber" type="text" placeholder="Informe obrigatoriamente o número do BO-e" autocomplete="off"><small class="field-help">O BO-e complementar é obrigatório para concluir a visita.</small></div>
+          <div class="field wide"><label for="visitNotes">Observações desta visita</label><textarea id="visitNotes" rows="4" placeholder="Registre orientações, providências ou informações relevantes"></textarea></div>
+        </div>
+
+        <div id="continuityPanel" class="continuity-panel hidden">
+          <div class="continuity-heading">
+            <div><span class="eyebrow">NOVA VISITA DE ACOMPANHAMENTO</span><h3>Agendar a próxima visita</h3><p>A visita atual será concluída e a próxima ficará aberta na agenda, sem apagar o histórico anterior. O limite é de 3 visitas.</p></div>
+            <span id="nextVisitSequenceBadge" class="sequence-badge">2ª VISITA</span>
+          </div>
+          <div id="secondVisitDeadlineNotice" class="deadline-reminder hidden"></div>
+          <div id="nextVisitFields" class="form-grid compact-grid">
+            <div class="field"><label for="nextVisitType">Tipo da próxima visita *</label><select id="nextVisitType"></select></div>
+            <div class="field schedule-input"><label for="nextVisitDate">Data da próxima visita *</label><input id="nextVisitDate" type="date"></div>
+            <div class="field schedule-input"><label for="nextVisitTime">Horário da próxima visita *</label><input id="nextVisitTime" type="time" min="13:00" max="19:00" step="300"><small>Permitido das 13h00 às 19h00.</small></div>
+            <div class="field wide"><label for="nextVisitNotes">Observações para a próxima visita</label><textarea id="nextVisitNotes" rows="3" placeholder="Ex.: vítima estará em casa às 17h; solicitar contato antes do deslocamento"></textarea></div>
+          </div>
+        </div>
+
+        <div class="form-actions"><button class="button secondary" data-close-modal="visitModal" type="button">Cancelar</button><button class="button primary" type="submit">Salvar acompanhamento</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="occurrenceSummaryModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="occurrenceSummaryTitle">
+    <div class="modal-backdrop" data-close-modal="occurrenceSummaryModal"></div>
+    <div class="modal-card summary-modal-card">
+      <button class="modal-close" data-close-modal="occurrenceSummaryModal" type="button">×</button>
+      <span class="eyebrow">RESUMO DA OCORRÊNCIA</span>
+      <h2 id="occurrenceSummaryTitle">Resumo</h2>
+      <div id="occurrenceSummaryContent"><div class="empty-state">Carregando resumo...</div></div>
+      <div class="form-actions"><button class="button secondary" data-close-modal="occurrenceSummaryModal" type="button">Fechar</button></div>
+    </div>
+  </div>
+
+  <div id="filesModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-modal="filesModal"></div>
+    <div class="modal-card">
+      <button class="modal-close" data-close-modal="filesModal" type="button">×</button>
+      <span class="eyebrow">ARQUIVOS E RELATÓRIOS</span>
+      <h2 id="filesModalTitle">Vincular arquivos</h2>
+      <form id="filesForm">
+        <input id="filesRecordId" type="hidden">
+        <div class="field"><label for="filesLinks">Links dos arquivos</label><textarea id="filesLinks" rows="7" placeholder="Cole um link por linha: relatório de visita, fotos, pasta do Drive ou outro documento"></textarea><small>Os links devem começar com http:// ou https://.</small></div>
+        <div class="field"><label for="filesNotes">Observações</label><textarea id="filesNotes" rows="3" placeholder="Descreva o conteúdo dos arquivos, se necessário"></textarea></div>
+        <div id="existingLinks" class="existing-links"></div>
+        <div class="form-actions"><button class="button secondary" data-close-modal="filesModal" type="button">Cancelar</button><button class="button primary" type="submit">Salvar links</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <button id="btImprimirFlutuante" class="imprimir-flutuante" type="button" title="Imprimir esta página" aria-label="Imprimir esta página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4H7zM5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2Zm4 8v2h6v-2Zm8-5.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z" fill="currentColor"/></svg></button>
+  <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <?!= include('Scripts'); ?>
+  <?!= include('Extras'); ?>
+</body>
+</html>

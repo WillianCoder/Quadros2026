@@ -1,0 +1,538 @@
+<script>
+/* Abas da Patrulha Lilás dentro do visual Mulher Segura:
+   Livro de Registro, Escala, Efetivo, Rede de Apoio, POP, Registro de Edições, Administrador e Aparência. */
+(function () {
+  'use strict';
+  var C = document.getElementById('conteudo');
+  var CONFIG = { batalhao: '3º BPM/M', unidade: 'Polícia Militar do Estado de São Paulo', subunidade: 'Programa Mulher Segura', cidade: 'São Paulo' };
+  var EMAIL = '', DONO = false, NAV = 0;
+  // só aplica a resposta se a pessoa ainda estiver na mesma página
+  function vivo(fn) { var n = NAV; return function () { if (n === NAV) return fn.apply(this, arguments); }; }
+
+  function srv(fn) {
+    var args = [].slice.call(arguments, 1);
+    return new Promise(function (ok, erro) {
+      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { erro(e && e.message ? e.message : String(e)); });
+      r[fn].apply(r, args);
+    });
+  }
+  function api(fn) { return srv('api', fn, [].slice.call(arguments, 1)); }
+
+  /* ---------- utilidades ---------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function hoje() { var d = new Date(); return d.toISOString().slice(0, 10); }
+  function agoraHora() { return new Date().toTimeString().slice(0, 5); }
+  function dataBR(s) { if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return s || ''; var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  var timer;
+  function aviso(html) { var a = document.getElementById('aviso'); a.innerHTML = html; a.classList.add('ver'); clearTimeout(timer); timer = setTimeout(function () { a.classList.remove('ver'); }, 5000); }
+  function cabecalho(titulo, comProt) {
+    return '<div class="cab"><div><strong>' + esc(CONFIG.unidade) + '</strong><br>' + esc([CONFIG.batalhao, CONFIG.subunidade].filter(Boolean).join(' · ')) + '<h1>' + esc(titulo) + '</h1>' + (comProt ? '<p style="margin:4px 0 0"><b>Protocolo nº %%PROT%%</b></p>' : '') + '</div></div>';
+  }
+  function imprimir(htmlRelatorio) {
+    var r = C.querySelector('.relatorio');
+    if (htmlRelatorio) htmlRelatorio = htmlRelatorio.split('%%PROT%%').join(C.getAttribute('data-prot') || '_______ (gerado ao salvar)');
+    if (htmlRelatorio && r) { r.innerHTML = htmlRelatorio; document.body.classList.add('modo-relatorio'); }
+    document.body.classList.add('modo-extra');
+    window.print();
+    document.body.classList.remove('modo-relatorio', 'modo-extra');
+  }
+  function btImprimir() { return '<button type="button" class="imprimir" data-acao="imprimir" title="Imprimir">🖨 imprimir</button>'; }
+  function topo(t, d) { document.getElementById('pageTitle').textContent = t; document.getElementById('pageSubtitle').textContent = d || ''; }
+  function titulo(t, d) { topo(t, d); return '<div class="barra-pagina nao-imprimir">' + btImprimir() + '</div>'; }
+  function campo(c) {
+    var id = 'f_' + c[0], tipo = c[2], larga = tipo === 'larga' || tipo === 'texto';
+    var h = '<div' + (larga ? ' style="grid-column:1/-1"' : '') + '><label for="' + id + '">' + esc(c[1]) + '</label>';
+    if (Array.isArray(tipo)) h += '<select id="' + id + '" name="' + c[0] + '">' + tipo.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select>';
+    else if (tipo === 'texto') h += '<textarea id="' + id + '" name="' + c[0] + '"></textarea>';
+    else h += '<input id="' + id + '" name="' + c[0] + '" type="' + (tipo && tipo !== 'larga' ? tipo : 'text') + '"' + (tipo === 'date' ? ' value="' + hoje() + '"' : tipo === 'time' ? ' value="' + agoraHora() + '"' : '') + '>';
+    return h + '</div>';
+  }
+  function dadosForm(form) { var d = {}; [].forEach.call(form.elements, function (el) { if (el.name) d[el.name] = el.type === 'checkbox' ? el.checked : el.value; }); return d; }
+  /* ---------- efetivo (policiais cadastrados) ---------- */
+  var EFETIVO = null;
+  function carregarEfetivo() {
+    return srv('efetivo', 'listar', null).then(function (l) { EFETIVO = l || []; return EFETIVO; });
+  }
+  function rotuloPM(p) { return [p.grad, p.re, p.qra].filter(Boolean).join(' '); }
+  /** Seletor de policial agrupado por Cia. Ao escolher, chama fn(policial). */
+  function seletorPM(id, texto) {
+    return '<div class="nao-imprimir"><label for="' + id + '">' + esc(texto || '👮 Escolher do efetivo') + '</label><select id="' + id + '" data-seletor-pm><option value="">Carregando…</option></select></div>';
+  }
+  function ligarSeletores(fn) {
+    var sels = C.querySelectorAll('[data-seletor-pm]');
+    if (!sels.length) return;
+    (EFETIVO ? Promise.resolve(EFETIVO) : carregarEfetivo()).then(function (lista) {
+      var grupos = {};
+      lista.forEach(function (p, i) { (grupos[p.cia || 'Sem Cia'] = grupos[p.cia || 'Sem Cia'] || []).push('<option value="' + i + '">' + esc(rotuloPM(p)) + '</option>'); });
+      var html = '<option value="">' + (lista.length ? 'Selecione…' : 'Nenhum policial cadastrado (menu Efetivo)') + '</option>' +
+        Object.keys(grupos).sort().map(function (g) { return '<optgroup label="' + esc(g) + '">' + grupos[g].join('') + '</optgroup>'; }).join('');
+      [].forEach.call(sels, function (sel) {
+        sel.innerHTML = html;
+        sel.onchange = function () { if (sel.value !== '') { fn(lista[+sel.value], sel); sel.value = ''; } };
+      });
+    }).catch(function (e) { [].forEach.call(sels, function (sel) { sel.innerHTML = '<option>Erro ao carregar efetivo</option>'; }); });
+  }
+  function telaEfetivo() {
+    C.innerHTML = titulo('Efetivo', 'Policiais cadastrados aparecem para seleção nos formulários e na escala. Todos usam a mesma lista; cada inclusão ou exclusão fica no registro.') +
+      '<div class="cartao nao-imprimir"><h2 style="margin-top:0">Adicionar / alterar policial</h2><form id="fe"><div class="grade">' +
+      campo(['pGrad', 'Graduação', ['SD', 'CB', '3º SGT', '2º SGT', '1º SGT', 'SUBTEN', 'ASP OF', '2º TEN', '1º TEN', 'CAP', 'MAJ', 'TEN CEL', 'CEL']]) +
+      campo(['pRe', 'RE']) + campo(['pQra', 'QRA (nome de guerra)']) + campo(['pCia', 'Cia']) +
+      '</div><p class="desc" style="margin:8px 0 0">Se o RE já existir, os dados são atualizados.</p><div class="acoes"><button class="bt">+ Adicionar</button></div></form></div>' +
+      '<div class="cartao tela"><div class="grade nao-imprimir" style="margin-bottom:12px">' + campo(['pFiltro', 'Filtrar por Cia ou nome']) + '</div><div id="listaEf"><p class="vazio">Carregando…</p></div></div><div class="relatorio"></div>';
+    var cias = '';
+    function desenhar() {
+      var f = (document.getElementById('f_pFiltro').value || '').toLowerCase();
+      var l = (EFETIVO || []).filter(function (p) { return !f || (rotuloPM(p) + ' ' + p.cia).toLowerCase().indexOf(f) >= 0; });
+      document.getElementById('listaEf').innerHTML = l.length ? '<div class="rolar"><table class="tabela"><tr><th>Cia</th><th>Grad.</th><th>RE</th><th>QRA</th><th class="nao-imprimir"></th></tr>' +
+        l.map(function (p) { return '<tr><td>' + esc(p.cia) + '</td><td>' + esc(p.grad) + '</td><td>' + esc(p.re) + '</td><td>' + esc(p.qra) + '</td><td class="nao-imprimir" style="width:1%;white-space:nowrap"><button class="imprimir" data-ed="' + esc(p.re) + '">editar</button> <button class="imprimir" data-del="' + esc(p.re) + '">🗑 apagar</button></td></tr>'; }).join('') +
+        '</table></div><p class="desc" style="margin-top:8px">' + l.length + ' policial(is)</p>' : '<p class="vazio">Nenhum policial cadastrado ainda.</p>';
+    }
+    function atualizar(op, dados) {
+      return srv('efetivo', op, dados).then(function (l) { EFETIVO = l || []; desenhar(); }).catch(function (e) { aviso('❌ ' + esc(e)); });
+    }
+    carregarEfetivo().then(desenhar).catch(function (e) { document.getElementById('listaEf').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    document.getElementById('f_pFiltro').addEventListener('input', desenhar);
+    document.getElementById('fe').onsubmit = function (e) {
+      e.preventDefault();
+      var v = function (k) { return document.getElementById('f_' + k).value.trim(); };
+      if (!v('pRe') || !v('pQra')) return aviso('Preencha RE e QRA.');
+      var bt = this.querySelector('button'); bt.disabled = true;
+      atualizar('add', { grad: v('pGrad'), re: v('pRe'), qra: v('pQra'), cia: v('pCia') }).then(function () {
+        aviso('✅ Policial salvo.'); bt.disabled = false;
+        document.getElementById('f_pRe').value = ''; document.getElementById('f_pQra').value = ''; document.getElementById('f_pRe').focus();
+      });
+    };
+    document.getElementById('listaEf').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var re = b.getAttribute('data-del') || b.getAttribute('data-ed');
+      var p = (EFETIVO || []).filter(function (x) { return x.re === re; })[0]; if (!p) return;
+      if (b.hasAttribute('data-ed')) {
+        document.getElementById('f_pGrad').value = p.grad; document.getElementById('f_pRe').value = p.re;
+        document.getElementById('f_pQra').value = p.qra; document.getElementById('f_pCia').value = p.cia; window.scrollTo(0, 0);
+      } else if (confirm('Apagar ' + rotuloPM(p) + ' do efetivo?')) atualizar('del', { re: re, grad: p.grad, qra: p.qra, cia: p.cia }).then(function () { aviso('Policial apagado.'); });
+    });
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(cabecalho('Efetivo cadastrado') + document.getElementById('listaEf').innerHTML); };
+  }
+
+  var COL_LIVRO = ['PROT', 'DATA', 'TELEFONE', 'NOME DA VÍTIMA', 'NATUREZA', 'RESULTADO', 'ACEITA VISITA', 'DATA/HORA VISITA', 'RE', 'QRA', 'DATA/HORA LIGAÇÃO', 'UNIDADE', 'ASSINATURA'];
+  function telaLivro() {
+    C.innerHTML = titulo('Livro de Registro', 'Toda ocorrência cadastrada recebe um número (protocolo). As que já tiveram ligação aparecem abaixo: marque e envie ao livro, sem digitar nada.') +
+      '<div class="cartao nao-imprimir" id="pend"><p class="vazio">Carregando…</p></div>' +
+      '<div class="cartao nao-imprimir"><div class="grade">' + campo(['lMes', 'Mês (vazio = todos)', 'month']) + campo(['lBusca', 'Buscar (nome, RE, protocolo…)']) + '</div>' +
+      '<div class="acoes"><button class="bt" type="button" data-acao="impLivro">🖨 Imprimir livro</button><button class="bt sec" type="button" data-acao="impBranco">📄 Imprimir em branco</button>' +
+      '<a class="bt sec" id="lnkPasta" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="#">📁 Abrir pasta no Drive</a></div></div>' +
+      '<div class="cartao tela" id="tabLivro"></div><div class="relatorio"></div>';
+    var todas = [];
+    function filtradas() {
+      var m = document.getElementById('f_lMes').value, b = document.getElementById('f_lBusca').value.toLowerCase();
+      var mm = m ? '/' + m.slice(5, 7) + '/' + m.slice(0, 4) : '';
+      return todas.filter(function (l) {
+        if (!l.some(function (v) { return String(v).trim(); })) return false;
+        if (mm && (l[1] + ' ' + l[10]).indexOf(mm) < 0) return false;
+        return !b || l.join(' ').toLowerCase().indexOf(b) >= 0;
+      });
+    }
+    function tabela(ls) {
+      return '<div class="rolar"><table class="tabela"><tr>' + COL_LIVRO.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>' +
+        ls.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + (esc(v) || '&nbsp;') + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>';
+    }
+    function desenhar() {
+      var ls = filtradas();
+      document.getElementById('tabLivro').innerHTML = '<h2 style="margin-top:0">Lançamentos (' + ls.length + ')</h2>' +
+        (ls.length ? tabela(ls) : '<p class="vazio">Nenhum lançamento ainda.</p>');
+    }
+    function desenharPend(p) {
+      var el = document.getElementById('pend');
+      el.innerHTML = '<h2 style="margin-top:0">Enviar ocorrências para o livro</h2>' + (p.length ?
+        '<label class="check" style="font-weight:600"><input type="checkbox" id="pTodos"> Selecionar todas (' + p.length + ')</label>' +
+        p.map(function (o) { return '<label class="check"><input type="checkbox" value="' + esc(o[0]) + '"> <span><b>Prot ' + esc(o[1]) + '</b> · ' + esc(o[2]) + ' · ' + esc(o[3]) + (o[4] ? ' · ' + esc(o[4]) : '') + '</span></label>'; }).join('') +
+        '<div class="grade" style="margin-top:12px">' + seletorPM('selLivroPM', '👮 Policial que fez o contato (RE e QRA no livro)') + '</div>' +
+        '<div class="acoes"><button class="bt" type="button" id="btEnviar">📒 Enviar selecionadas para o livro</button></div>'
+        : '<p class="desc" style="margin:0">Nenhuma ocorrência aguardando. Depois de registrar a ligação em “Contato com as Vítimas”, ela aparece aqui.</p>');
+      var todos = document.getElementById('pTodos');
+      if (todos) todos.onchange = function () { [].forEach.call(el.querySelectorAll('input[value]'), function (c) { c.checked = todos.checked; }); };
+      var bt = document.getElementById('btEnviar');
+      if (bt) bt.onclick = function () {
+        var sel = [].map.call(el.querySelectorAll('input[value]:checked'), function (c) { return c.value; });
+        if (!sel.length) return aviso('Marque ao menos uma ocorrência.');
+        bt.disabled = true; bt.textContent = 'Enviando…';
+        api('livroEnviar', sel, pmLivro).then(function (r) { aplicar(r); aviso('✅ ' + sel.length + ' ocorrência(s) lançada(s) no livro.'); })
+          .catch(function (e) { aviso('❌ ' + esc(e)); bt.disabled = false; bt.textContent = '📒 Enviar selecionadas para o livro'; });
+      };
+    }
+    var pmLivro = null;
+    function aplicar(r) { todas = r.linhas || []; document.getElementById('lnkPasta').href = r.url || '#'; desenhar(); desenharPend(r.pendentes || []);
+      ligarSeletores(function (p, sel) { pmLivro = { re: p.re, qra: p.qra }; aviso('Policial escolhido: ' + esc(rotuloPM(p))); }); }
+    api('livroLer').then(vivo(aplicar)).catch(function (e) { document.getElementById('pend').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; });
+    [].forEach.call(C.querySelectorAll('#f_lMes,#f_lBusca'), function (el) { el.addEventListener('input', desenhar); });
+    var titLivro = function () { var m = document.getElementById('f_lMes').value; return 'Livro de Registro — Programa Mulher Segura' + (m ? ' — ' + m.slice(5, 7) + '/' + m.slice(0, 4) : ''); };
+    var imprimirLivro = function () {
+      var ls = filtradas();
+      if (!ls.length) return aviso('Não há lançamentos para imprimir. Use “Imprimir em branco”.');
+      imprimir('<style>@page{size:landscape}</style>' + cabecalho(titLivro()) + tabela(ls));
+    };
+    C.querySelector('[data-acao=impLivro]').onclick = imprimirLivro;
+    C.querySelector('[data-acao=imprimir]').onclick = imprimirLivro;
+    C.querySelector('[data-acao=impBranco]').onclick = function () {
+      var vazias = []; for (var i = 0; i < 18; i++) vazias.push(COL_LIVRO.map(function () { return ''; }));
+      imprimir('<style>@page{size:landscape}.relatorio td{height:26px}</style>' + cabecalho('Livro de Registro — Programa Mulher Segura') + tabela(vazias));
+    };
+  }
+
+  /* ---------- gerador de escala ---------- */
+  var DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  function lerLocal(k, p) { try { return localStorage.getItem(k) || p; } catch (e) { return p; } }
+  function gravarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+  function telaEscala() {
+    C.innerHTML = titulo('Gerador de Escala', 'Preencha o efetivo, clique em Gerar e ajuste o que quiser direto na tabela (clique na célula para editar).') +
+      '<div class="tela cartao nao-imprimir"><div class="grade">' +
+      campo(['eTitulo', 'Título', 'larga']) + campo(['eInicio', 'Data de início', 'date']) + campo(['eDias', 'Quantidade de dias', 'number']) + campo(['ePorVtr', 'PMs por viatura', 'number']) +
+      campo(['eVtr', 'Viaturas / Cias (separe por vírgula)', 'larga']) + campo(['eHor', 'Horários (separe por vírgula; um por viatura, ou um para todas)', 'larga']) +
+      '<div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div style="flex:1;min-width:200px"><label for="f_eCia">Puxar policiais do Efetivo cadastrado</label><select id="f_eCia"><option value="">Todas as Cias</option></select></div>' +
+      '<button type="button" class="bt sec" data-acao="puxar">👮 Puxar todos</button></div>' + seletorPM('selEsc', '…ou adicionar um policial') +
+      campo(['eEfetivo', 'Efetivo da escala — um por linha: GRAD; RE; QRA (pode editar)', 'texto']) +
+      '</div><div class="acoes"><button class="bt" data-acao="gerar">⚡ Gerar escala</button><button class="bt sec" data-acao="linha">+ Linha</button><button class="bt sec" data-acao="salvarEscala">💾 Salvar no Drive</button></div></div>' +
+      '<div id="escala" class="cartao"></div>';
+    var g = function (id) { return document.getElementById('f_' + id); };
+    g('eTitulo').value = lerLocal('eTitulo', 'ESCALA VIATURAS LILÁS');
+    g('eDias').value = lerLocal('eDias', '7'); g('ePorVtr').value = lerLocal('ePorVtr', '2');
+    g('eVtr').value = lerLocal('eVtr', '1ª Cia, 2ª Cia, 3ª Cia');
+    g('eHor').value = lerLocal('eHor', '04h45 às 12h45, 10h00 às 22h00, 14h00 às 22h00');
+    g('eEfetivo').value = lerLocal('eEfetivo', 'SD; 000000-0; NOME DO POLICIAL\nCB; 000000-0; NOME DO POLICIAL');
+    g('eEfetivo').style.minHeight = '160px';
+    var linhaPM = function (p) { return [p.grad, p.re, p.qra].join('; '); };
+    var addLinhas = function (ls) { var t = g('eEfetivo'), atual = t.value.trim(); ls = ls.filter(function (l) { return atual.indexOf(l) < 0; }); t.value = (atual ? atual + '\n' : '') + ls.join('\n'); };
+    ligarSeletores(function (p) { addLinhas([linhaPM(p)]); });
+    (EFETIVO ? Promise.resolve(EFETIVO) : carregarEfetivo()).then(function (l) {
+      var cs = {}; l.forEach(function (p) { if (p.cia) cs[p.cia] = 1; });
+      g('eCia').innerHTML += Object.keys(cs).sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    }).catch(function () { });
+    C.querySelector('[data-acao=puxar]').onclick = function () {
+      var c = g('eCia').value, l = (EFETIVO || []).filter(function (p) { return !c || p.cia === c; });
+      if (!l.length) return aviso('Nenhum policial cadastrado' + (c ? ' na ' + esc(c) : '') + '. Cadastre no menu Efetivo.');
+      if (/000000-0/.test(g('eEfetivo').value)) g('eEfetivo').value = '';
+      addLinhas(l.map(linhaPM)); aviso(l.length + ' policial(is) na lista. Clique em Gerar escala.');
+    };
+    var salvo = lerLocal('escalaHtml', ''); if (salvo) document.getElementById('escala').innerHTML = salvo; else gerar();
+
+    function gerar() {
+      ['eTitulo', 'eDias', 'ePorVtr', 'eVtr', 'eHor', 'eEfetivo'].forEach(function (k) { gravarLocal(k, g(k).value); });
+      var ini = g('eInicio').value ? new Date(g('eInicio').value + 'T12:00') : new Date();
+      var dias = Math.min(31, Math.max(1, +g('eDias').value || 7)), por = Math.min(6, Math.max(1, +g('ePorVtr').value || 2));
+      var vtrs = g('eVtr').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var hors = g('eHor').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var ef = g('eEfetivo').value.split('\n').map(function (l) { var p = l.split(';').map(function (s) { return s.trim(); }); return p[2] ? p : null; }).filter(Boolean);
+      if (!vtrs.length) vtrs = ['Viatura 1'];
+      var fim = new Date(ini); fim.setDate(fim.getDate() + dias - 1);
+      var fmt = function (d) { return ('0' + d.getDate()).slice(-2) + MESES[d.getMonth()].toUpperCase(); };
+      var h = '<div class="cab" style="text-align:center"><strong>' + esc(CONFIG.unidade) + '</strong><h1 contenteditable="true">' + esc(g('eTitulo').value) + ' — ' + fmt(ini) + ' A ' + fmt(fim) + String(fim.getFullYear()).slice(2) + '</h1></div>' +
+        '<div class="rolar"><table class="tabela"><thead><tr><th>Dia da semana</th><th>Dia</th><th>Viatura</th><th>Horário</th><th>GRAD.</th><th>RE</th><th>QRA</th></tr></thead><tbody>';
+      var k = 0;
+      for (var d = 0; d < dias; d++) {
+        var dt = new Date(ini); dt.setDate(dt.getDate() + d);
+        var usados = {};
+        vtrs.forEach(function (v, vi) {
+          var hor = hors[vi % (hors.length || 1)] || '';
+          for (var p = 0; p < por; p++) {
+            var pm = ['', '', ''];
+            if (ef.length) { // rodízio sem repetir o mesmo PM no mesmo dia
+              for (var t = 0; t < ef.length; t++) { var c = ef[(k + t) % ef.length]; if (!usados[c[1] + c[2]]) { pm = c; k = (k + t + 1) % ef.length; usados[c[1] + c[2]] = 1; break; } }
+            }
+            h += '<tr>' + [p === 0 && vi === 0 ? DIAS[dt.getDay()] : '', p === 0 && vi === 0 ? dt.getDate() + MESES[dt.getMonth()] + '.' : '', p === 0 ? v : '', p === 0 ? hor : '', pm[0], pm[1], pm[2]]
+              .map(function (x) { return '<td contenteditable="true">' + esc(x) + '</td>'; }).join('') + '</tr>';
+          }
+        });
+      }
+      h += '</tbody></table></div><p contenteditable="true" style="font-size:12px;color:#555">* OBS: preencher com o efetivo nos espaços em branco.</p>';
+      document.getElementById('escala').innerHTML = h; guardar();
+    }
+    function guardar() { gravarLocal('escalaHtml', document.getElementById('escala').innerHTML); }
+    document.getElementById('escala').addEventListener('input', guardar);
+    C.querySelector('[data-acao=gerar]').onclick = function () { if (!lerLocal('escalaHtml', '') || confirm('Gerar de novo substitui a escala atual. Continuar?')) gerar(); };
+    C.querySelector('[data-acao=linha]').onclick = function () { var tb = C.querySelector('#escala tbody'); if (tb) { tb.insertAdjacentHTML('beforeend', '<tr>' + '<td contenteditable="true"></td>'.repeat(7) + '</tr>'); guardar(); } };
+    C.querySelector('[data-acao=salvarEscala]').onclick = function (e) {
+      var el = document.getElementById('escala'), bt = e.currentTarget; bt.disabled = true;
+      srv('salvarEscala', el.querySelector('h1') ? el.querySelector('h1').textContent : 'Escala', el.innerHTML.replace(/ contenteditable="true"/g, ''))
+        .then(function (r) { aviso('✅ Escala salva no seu Drive. <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Abrir</a>'); })
+        .catch(function (er) { aviso('❌ ' + esc(er)); }).then(function () { bt.disabled = false; });
+    };
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  /* ---------- consulta ---------- */
+  function telaPop() {
+    var vd = ['Gravar toda a interação com a COP, quando disponível (POP 5.16.00).', 'Identificar a origem: SOS Mulher, SP Mulher Segura, Cabine Lilás, 190 ou Sinal Vermelho.',
+      'Atendimento por equipe capacitada, preferencialmente com ao menos uma policial feminina.', 'Localizar a vítima e resguardar prioritariamente sua integridade física.',
+      'Quem iniciar o atendimento segue até o fim — evita revitimização (art. 15-A da Lei 13.869/19).', 'Vítima sem vestes ou com vestes rasgadas: providenciar que seja coberta.',
+      'Avaliar estado físico e psíquico; havendo lesão, levar ao hospital ou acionar Bombeiros/SAMU.', 'Colher informações com solicitante/vítima e transmitir pela rede rádio.',
+      'Localizar o suspeito; constatada infração, conduzi-lo à área de segurança, de preferência fora do local.', 'Abordagem e busca pessoal (POP 1.01.05 e 1.01.06).',
+      'Algemas, se necessário, conforme POP 5.03.02.', 'Na prisão em flagrante, informar os direitos constitucionais (permanecer calado, advogado).',
+      'Conduzir as partes ao DP para registro.', 'Se não veio pelos apps, verificar se há MPU pedindo o documento judicial.',
+      'Qualificar infrator e vítima, arrolar testemunhas e pesquisar antecedentes.', 'Havendo MPU contra o agressor, conduzir as partes ao DP, independentemente de outros fatores de risco.',
+      'Sinal Vermelho: o funcionário da farmácia não é testemunha nem vai ao DP (salvo se presenciou o crime).'];
+    C.innerHTML = titulo('POP 2.09 — Passo a passo', 'Ocorrência de violência doméstica, descumprimento de MPU e crime sexual. Consulta rápida — siga sempre o POP vigente.') +
+      '<div class="cartao"><h2 style="margin-top:0">Material necessário</h2><p>Uniforme operacional (R-5-PM) · pistola .40 com 3 carregadores · equipamentos de menor potencial ofensivo · algemas com chave · PM O-58 · RSO · rádio/TPD · COP · relação de órgãos de apoio às vítimas.</p></div>' +
+      '<div class="cartao"><h2 style="margin-top:0">2.09.01 — Violência doméstica / descumprimento de MPU</h2><div class="alerta">Atividade crítica: certificar-se de que realmente se trata de violência doméstica e/ou descumprimento de Medida Protetiva.</div><ol class="passos">' + vd.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ol></div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+  function telaRede() {
+    var itens = [
+      ['🚨 190 — Polícia Militar', 'Emergência. Na Cabine Lilás (COPOM) policiais femininas orientam a mulher desde o acionamento.'],
+      ['📞 180 — Central de Atendimento à Mulher', 'Orientação e denúncia, 24 h, gratuito.'],
+      ['📱 App SP Mulher Segura', 'Registro de BO, rede de serviços e botão do pânico (quando há medida protetiva). Android e iOS.'],
+      ['📱 App SOS Mulher', 'Acionamento da PM pela vítima com medida protetiva.'],
+      ['🏛️ DDM / Sala DDM / DDM Online', 'Delegacias de Defesa da Mulher; todas as delegacias registram ocorrências. Sala DDM atende inclusive à noite, fins de semana e feriados.'],
+      ['💜 Sala Lilás (IML)', 'Atendimento pericial humanizado para vítimas de violência sexual e doméstica.'],
+      ['🏠 Casas Abrigo', 'Acolhimento da mulher e filhos menores de 18 anos em risco iminente.'],
+      ['💰 Auxílio-Aluguel', 'R$ 500/mês para mulheres com medida protetiva em vulnerabilidade social.'],
+      ['🍸 Protocolo Não Se Cale', 'Acolhimento em bares, restaurantes e casas de show; fiscalização pelo Procon-SP.'],
+      ['🚏 Abrigo Amigo', 'Painéis em pontos de ônibus que conectam a mulher a uma atendente em tempo real.'],
+      ['📍 Tornozeleira eletrônica', 'Fiscaliza o cumprimento de medidas protetivas pelo agressor, em tempo real.']];
+    C.innerHTML = titulo('Rede de apoio', 'Programas do movimento São Paulo Por Todas para orientar a vítima.') +
+      '<div class="atalhos">' + itens.map(function (i) { return '<a><b>' + esc(i[0]) + '</b><span>' + esc(i[1]) + '</span></a>'; }).join('') + '</div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  function telaRegistro() {
+    C.innerHTML = titulo('Registro de edições', 'Histórico permanente: toda conta que salva ou altera algo fica registrada aqui. Todos podem ver; ninguém pode apagar.') + '<div class="cartao"><p class="vazio">Carregando…</p></div>';
+    srv('lerRegistro').then(vivo(function (r) {
+      C.querySelector('.cartao').innerHTML = '<p class="nao-imprimir">🔒 <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Ver planilha original (somente leitura)</a> · últimos 500 registros</p>' +
+        (r.linhas.length ? '<div class="rolar"><table class="tabela"><tr><th>Data/hora</th><th>Conta</th><th>Ação</th><th>Módulo</th><th>Descrição</th></tr>' +
+          r.linhas.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td>' + esc(l[1]) + '</td><td>' + esc(l[2]) + '</td><td>' + esc(l[3]) + '</td><td>' + (l[5] && /^https:\/\//.test(l[5]) ? '<a href="' + esc(l[5]) + '" target="_blank" rel="noopener">' + esc(l[4]) + '</a>' : esc(l[4])) + '</td></tr>'; }).join('') + '</table></div>' : '<p class="vazio">Nenhum registro ainda.</p>');
+    })).catch(vivo(function (e) { C.querySelector('.cartao').innerHTML = '<p class="vazio">❌ ' + esc(e) + '</p>'; }));
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+  function logoUrl(i) { var u = (CONFIG.logos || [])[i] || ''; return /^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+$/.test(u) ? u : ''; }
+  function aplicaConfig() {
+    document.getElementById('nomeSistema').textContent = CONFIG.nome || 'Mulher Segura';
+    document.getElementById('heroBatalhao').textContent = CONFIG.batalhao || '3º BPM/M';
+    var l1 = logoUrl(0);
+    ['logo1', 'logoHero'].forEach(function (id) { var el = document.getElementById(id); if (!el) return; if (!el.getAttribute('data-padrao')) el.setAttribute('data-padrao', el.src); el.src = l1 || el.getAttribute('data-padrao'); });
+  }
+
+  /* ---------- aparência: claro/escuro e temas (fica salvo neste navegador) ---------- */
+  var TEMAS = [['lilas', 'Lilás', '#6b4fa0'], ['lavanda', 'Lavanda', '#8a7cc4'], ['ametista', 'Ametista', '#7b3f9e'], ['rosa', 'Rosa', '#b0577f'], ['malva', 'Malva', '#8e5d7a'],
+    ['azul', 'Azul PM', '#2f4f8f'], ['ceu', 'Céu', '#3d7ab8'], ['salvia', 'Sálvia', '#5b7f6a'], ['areia', 'Areia', '#9a7b52'], ['grafite', 'Grafite', '#555b66']];
+  function aplicaAparencia() {
+    var raiz = document.documentElement, tema = lerLocal('tema', 'lilas'), modo = lerLocal('modo', 'auto');
+    var escuro = modo === 'escuro' || (modo === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    raiz.setAttribute('data-tema', tema); raiz.setAttribute('data-modo', escuro ? 'escuro' : 'claro');
+    var anima = lerLocal('anima', 'sim') === 'sim';
+    raiz.setAttribute('data-anima', anima ? 'sim' : 'nao');
+    var ch = document.getElementById('btAnima'); if (ch) ch.setAttribute('aria-checked', anima ? 'true' : 'false');
+    [].forEach.call(document.querySelectorAll('.modos button'), function (b) { b.classList.toggle('sel', b.getAttribute('data-modo') === modo); });
+    [].forEach.call(document.querySelectorAll('.cores button'), function (b) { b.classList.toggle('sel', b.getAttribute('data-tema') === tema); });
+  }
+  document.getElementById('cores').innerHTML = TEMAS.map(function (t) { return '<div><button type="button" data-tema="' + t[0] + '" style="background:' + t[2] + '" aria-label="Tema ' + t[1] + '"></button><span>' + t[1] + '</span></div>'; }).join('');
+  document.getElementById('btTema').onclick = function (e) { e.stopPropagation(); var p = document.getElementById('painelTema'); p.hidden = !p.hidden; };
+  document.getElementById('painelTema').onclick = function (e) {
+    e.stopPropagation();
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-modo')) gravarLocal('modo', b.getAttribute('data-modo'));
+    if (b.hasAttribute('data-tema')) gravarLocal('tema', b.getAttribute('data-tema'));
+    if (b.id === 'btAnima') gravarLocal('anima', lerLocal('anima', 'sim') === 'sim' ? 'nao' : 'sim');
+    aplicaAparencia();
+  };
+  document.addEventListener('click', function () { document.getElementById('painelTema').hidden = true; });
+  if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', aplicaAparencia); } catch (e) { } }
+  aplicaAparencia();
+
+  /* ---------- administrador (só a conta dona) ---------- */
+  function telaAdmin() {
+    C.innerHTML = titulo('Administrador', 'Visível somente para a conta dona do sistema. Toda alteração fica no registro.') +
+      '<div class="cartao" id="adm"><p class="vazio">Carregando…</p></div>';
+    if (!DONO) { document.getElementById('adm').innerHTML = '<p class="vazio">Área restrita ao administrador.</p>'; return; }
+    srv('adminEntrar', null, null, null).then(vivo(mostrar)).catch(vivo(function (er) { document.getElementById('adm').innerHTML = '<p class="vazio">❌ ' + esc(er) + '</p>'; }));
+    function mostrar(r) {
+      var c = r.config || CONFIG, ac = r.acesso || {}, u = logoUrl(0);
+      document.getElementById('adm').innerHTML =
+        '<h2>Quem pode usar o sistema</h2><p class="desc">Só entram as contas listadas aqui (além de você). Os dados das vítimas ficam protegidos.</p>' +
+        '<form id="fa"><div class="grade">' + campo(['aEmails', 'E-mails autorizados (um por linha ou separados por vírgula)', 'texto']) + campo(['aDominio', 'Ou libere um domínio inteiro (ex.: policiamilitar.sp.gov.br)']) +
+        '</div><div class="acoes"><button class="bt">💾 Salvar contas autorizadas</button></div></form>' +
+        '<h2>Identificação</h2><form id="fc"><div class="grade">' +
+        campo(['nome', 'Nome do sistema']) + campo(['batalhao', 'Batalhão (ex.: 3º BPM/M)']) +
+        campo(['unidade', 'Linha 1 dos relatórios (instituição)', 'larga']) + campo(['subunidade', 'Linha 2 dos relatórios (programa)', 'larga']) + campo(['cidade', 'Cidade']) +
+        '</div><div class="acoes"><button class="bt">💾 Salvar identificação</button></div></form>' +
+        '<h2>Imagem da marca</h2><p class="desc">Aparece na barra lateral e no cartão do topo. Sem imagem enviada, fica a arte padrão da policial. Use a arte do 3º BPM/M em PNG ou JPG.</p>' +
+        '<div class="grade"><div class="cartao" style="margin:0"><div style="height:90px;display:grid;place-items:center;margin-bottom:8px">' + (u ? '<img src="' + esc(u) + '" alt="" style="max-height:86px;border-radius:12px">' : '<span class="desc">arte padrão</span>') + '</div>' +
+        '<input type="file" accept="image/*" id="fLogo">' + (u ? '<button type="button" class="imprimir" style="margin-top:8px" id="btTirarLogo">voltar para a arte padrão</button>' : '') + '</div></div>' +
+        '<h2>Planilhas</h2><p><a href="' + esc(r.base || '#') + '" target="_blank" rel="noopener">📊 Abrir a base de dados Mulher Segura</a> (só você edita)</p>' +
+        '<div class="dica" style="margin-top:16px">O registro de edições não pode ser apagado pelo sistema e fica no seu Drive. Seu e-mail aparece como “Administrador” para os outros usuários.</div>';
+      document.getElementById('f_aEmails').value = String(ac.emails || '').split(',').filter(Boolean).join('\n');
+      document.getElementById('f_aDominio').value = ac.dominio || '';
+      ['nome', 'batalhao', 'unidade', 'subunidade', 'cidade'].forEach(function (k) { document.getElementById('f_' + k).value = c[k] || ''; });
+      var val = function (k) { return document.getElementById('f_' + k).value; };
+      document.getElementById('fa').onsubmit = function (e) {
+        e.preventDefault();
+        srv('adminEntrar', null, null, { emails: val('aEmails'), dominio: val('aDominio') }).then(function (r2) { mostrar(r2); aviso('✅ Contas autorizadas salvas.'); }).catch(function (er) { aviso('❌ ' + esc(er)); });
+      };
+      document.getElementById('fc').onsubmit = function (e) {
+        e.preventDefault();
+        var n = { nome: val('nome'), batalhao: val('batalhao'), unidade: val('unidade'), subunidade: val('subunidade'), cidade: val('cidade') };
+        srv('adminEntrar', n, null, null).then(function (r2) { CONFIG = r2.config || n; aplicaConfig(); aviso('✅ Identificação salva.'); }).catch(function (er) { aviso('❌ ' + esc(er)); });
+      };
+      var depois = function (r2) { CONFIG = r2.config || CONFIG; aplicaConfig(); mostrar(r2); aviso('✅ Imagem atualizada.'); };
+      document.getElementById('fLogo').onchange = function () {
+        var f = this.files[0]; if (!f) return;
+        if (f.size > 2 * 1024 * 1024) return aviso('Imagem muito grande (máx. 2 MB).');
+        var rd = new FileReader();
+        rd.onload = function () { aviso('Enviando…'); srv('adminEntrar', null, { mime: f.type, base64: String(rd.result).split(',')[1] }, null).then(depois).catch(function (er) { aviso('❌ ' + esc(er)); }); };
+        rd.readAsDataURL(f);
+      };
+      var tirar = document.getElementById('btTirarLogo');
+      if (tirar) tirar.onclick = function () { if (confirm('Voltar para a arte padrão?')) srv('adminEntrar', null, { remover: true }, null).then(depois).catch(function (er) { aviso('❌ ' + esc(er)); }); };
+    }
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+
+  /* ---------- dicas de cada aba (botão liga/desliga) ---------- */
+  var DICAS = {
+    sala: ['Preencha com os dados do BOPM/BOPC.', 'Campos com * são obrigatórios.', 'Ao cadastrar, a ocorrência ganha um número (protocolo) e já entra no mapa.'],
+    contato: ['Escolha a ocorrência na lista da esquerda.', 'Ligue para a vítima — a aba “Como Falar com a Vítima” ajuda na conversa.', 'Registre o resultado. Se ela quiser visita, marque dia e hora (13h às 19h).'],
+    acompanhamento: ['Aqui ficam as visitas abertas: vermelho = atrasada, laranja = hoje.', 'Abra a visita para concluir, reagendar ou marcar a próxima (até 3).', 'Anexe o FONAR e informe o BO-e da visita.'],
+    dados: ['Escolha o ano e o mês.', 'Os gráficos mostram registros, ligações, visitas, Cias e naturezas.', 'Use “Imprimir relatório dos dados” para levar à reunião.'],
+    consulta: ['Pesquise por nome, BOPM, BOPC ou telefone.', 'Filtre por 1ª, 2ª ou 3ª visita.', 'Vincule links de fotos e relatórios à ocorrência.'],
+    mapa: ['Escolha o período e a Cia e clique em “Atualizar mapa”.', '“Mapa de calor” mostra onde há mais casos; “Pontos” mostra cada local.', 'Cada novo cadastro entra no mapa sozinho.'],
+    livro: ['As ocorrências com ligação feita aparecem para enviar.', 'Marque, escolha o policial e clique em “Enviar” — sem digitar.', 'Imprima preenchido ou em branco.'],
+    escala: ['Puxe os policiais do Efetivo ou digite.', 'Clique em “Gerar escala” e ajuste clicando nas células.', 'Salve no Drive ou imprima.'],
+    efetivo: ['Cadastre grad., RE, QRA e Cia.', 'Esses policiais aparecem nos seletores do Livro e da Escala.', 'Use “editar” ou “apagar” na lista.'],
+    rede: ['Serviços para orientar a vítima.', 'Em perigo agora: 190. Orientação 24 h: 180.'],
+    pop: ['Passo a passo do POP 2.09 para consulta rápida.', 'Sempre siga o POP vigente.'],
+    registro: ['Tudo o que é feito no sistema fica aqui, com conta e horário.', 'Ninguém consegue apagar.'],
+    falar: ['Roteiro de apoio, não obrigatório.', 'Adapte à conversa e ao momento da vítima.'],
+    exemplo: ['Um exemplo preenchido de cada aba (dados fictícios de teste).', 'Use para treinar a equipe.'],
+    admin: ['Libere as contas dos policiais.', 'Ajuste nome, batalhão e imagem.', 'Só você vê esta aba.']
+  };
+  function dicasLigadas() { return lerLocal('dicas', 'sim') === 'sim'; }
+  function dica(pg) {
+    var box = document.getElementById('tutorial'), lista = DICAS[pg];
+    document.getElementById('btDicas').textContent = '💡 Dicas: ' + (dicasLigadas() ? 'ligadas' : 'desligadas');
+    if (!lista || !dicasLigadas()) { box.classList.add('hidden'); return; }
+    box.innerHTML = '<strong>💡 Como usar</strong><ol>' + lista.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol>' +
+      '<button type="button" class="tutorial-fechar" title="Desligar dicas" aria-label="Desligar dicas">✕</button>';
+    box.classList.remove('hidden');
+    box.querySelector('.tutorial-fechar').onclick = function () { gravarLocal('dicas', 'nao'); dica(pg); };
+  }
+  var PAGINA = 'sala';
+  document.getElementById('btDicas').onclick = function () { gravarLocal('dicas', dicasLigadas() ? 'nao' : 'sim'); dica(PAGINA); };
+
+  /* ---------- botão flutuante de impressão (todas as abas) ---------- */
+  document.getElementById('btImprimirFlutuante').onclick = function () {
+    document.body.classList.add('impressao-geral');
+    window.print();
+    document.body.classList.remove('impressao-geral');
+  };
+
+  /* ---------- como falar com a vítima ---------- */
+  function bloco(t, itens, cls) { return '<div class="cartao ' + (cls || '') + '"><h2>' + esc(t) + '</h2><ul class="lista-dicas">' + itens.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>'; }
+  function telaFalar() {
+    C.innerHTML = titulo('Como Falar com a Vítima', 'Guia de apoio para a ligação e a visita. Não é obrigatório seguir à risca: adapte à conversa.') +
+      '<div class="dica"><b>Base:</b> Roteiro de Contato Telefônico do Programa Mulher Segura, POP 2.09 e programas do São Paulo Por Todas.</div>' +
+      '<div class="grade-2">' +
+      bloco('Antes de ligar', ['Leia o breve histórico e confira nome e telefone.', 'Esteja em local reservado, sem barulho.', 'Tenha a <b>Rede de Apoio</b> aberta para orientar.', 'Lembre: quem atende deve seguir até o fim, sem passar a vítima de um para outro.']) +
+      bloco('Postura', ['Fale com calma, voz baixa e frases curtas.', 'Ouça sem interromper e <b>sem julgar</b>.', 'Não culpe a vítima nem pressione para registrar BO.', 'Não peça para contar tudo de novo (evita revitimização).', 'Não prometa o que não pode cumprir.', 'Mantenha sigilo.']) +
+      '</div>' +
+      '<div class="cartao"><h2>Sequência sugerida da ligação</h2><div class="etapas">' +
+      [['1', 'Identificação', '“Bom dia/boa tarde. Eu poderia falar com a senhora [nome]?” → “Meu nome é [grad. e nome], sou policial militar do Programa Mulher Segura.”'],
+       ['2', 'Segurança primeiro', '“A senhora está sozinha? Pode conversar agora ou prefere que eu ligue em outro horário?” → “A senhora está correndo algum perigo neste momento?”<br><b>Se sim: encerre o roteiro e acione o 190.</b>'],
+       ['3', 'Motivo e autorização', '“Estou ligando para acompanhar a ocorrência do dia [data]. Posso fazer algumas perguntas sobre sua segurança?”'],
+       ['4', 'Situação atual', '“O autor está no mesmo local que a senhora?” → “Depois daquele dia, houve nova ameaça, agressão ou discussão?” → “Como a senhora está, física e emocionalmente?”'],
+       ['5', 'Orientações', '“A senhora conhece os aplicativos SOS Mulher e SP Mulher Segura?” Explique o botão do pânico (com medida protetiva), 190 e 180.'],
+       ['6', 'Visita', '“Gostaria de receber uma visita da Patrulha Mulher Segura? Qual o melhor dia e horário?” (13h às 19h) → “Gostaria de receber uma nova ligação?”'],
+       ['7', 'Encerramento', '“Agradeço por conversar comigo. A senhora não precisa enfrentar isso sozinha. Se houver nova ameaça, agressão, aproximação do autor ou descumprimento da medida, acione imediatamente a Polícia Militar.”']]
+        .map(function (e) { return '<div class="etapa"><span>' + e[0] + '</span><div><b>' + e[1] + '</b><p>' + e[2] + '</p></div></div>'; }).join('') + '</div></div>' +
+      '<div class="grade-2">' +
+      bloco('Sinais de alto risco → 190 e prioridade', ['Ameaça de morte ou uso/posse de arma.', 'Tentativa de enforcamento ou estrangulamento.', 'Agressões cada vez mais frequentes ou graves.', 'Perseguição, ciúme excessivo ou controle.', 'Separação recente ou descumprimento de medida protetiva.', 'Agressão durante a gravidez ou contra os filhos.', 'Ela diz que tem medo de morrer.'], 'alerta-cartao') +
+      bloco('Frases que ajudam', ['“A senhora não tem culpa do que aconteceu.”', '“Estamos aqui para ajudar, no seu tempo.”', '“Se não puder falar, responda só sim ou não.”', '“Quer que eu ligue em outro horário mais seguro?”']) +
+      bloco('Evite', ['“Por que a senhora não saiu de casa?”', '“Mas ele é o pai dos seus filhos…”', 'Dar opinião sobre a relação.', 'Comentar o caso com quem não participa do atendimento.']) +
+      bloco('Encaminhamentos', ['App <b>SP Mulher Segura</b> e <b>SOS Mulher</b> (botão do pânico com MPU).', '<b>190</b> emergência · <b>180</b> orientação 24 h.', '<b>DDM / DDM Online</b> para registrar ocorrência.', '<b>Casa Abrigo</b> em risco iminente; <b>Auxílio-Aluguel</b> (R$ 500) com MPU.']) +
+      '</div>' +
+      '<div class="dica">Depois da ligação, registre tudo em <b>Contato com as Vítimas</b>. Se ela aceitou visita, a visita aparece em <b>Acompanhamento</b>.</div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+  /* ---------- exemplos preenchidos de cada aba (dados fictícios) ---------- */
+  function det(pares) { return '<div class="detail-grid">' + pares.map(function (p) { return '<div class="detail-item' + (p[2] ? ' wide' : '') + '"><span>' + esc(p[0]) + '</span><strong>' + esc(p[1]) + '</strong></div>'; }).join('') + '</div>'; }
+  function ex(n, t, txt, corpo) { return '<div class="cartao exemplo"><div class="exemplo-topo"><span class="exemplo-num">' + n + '</span><div><h2>' + esc(t) + '</h2><p class="desc">' + txt + '</p></div></div>' + corpo + '</div>'; }
+  function telaExemplo() {
+    var tab = function (cab, linhas) { return '<div class="rolar"><table class="tabela"><tr>' + cab.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr>' + linhas.map(function (l) { return '<tr>' + l.map(function (v) { return '<td>' + esc(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table></div>'; };
+    C.innerHTML = titulo('Exemplos e Tutorial', 'Um exemplo de cada aba, com dados fictícios de TESTE no Jabaquara. Nada aqui é gravado no sistema.') +
+      '<div class="dica"><b>Caminho de uma ocorrência:</b> 1 Cadastro → 2 Contato → 3 Acompanhamento → 7 Livro de Registro. Os números (4, 5 e 6) mostram tudo isso em gráficos, buscas e no mapa.</div>' +
+      ex(1, 'Cadastro Sala de Operações', 'A Sala de Operações registra o que veio no boletim. Ao clicar em <b>Cadastrar ocorrência</b>, ela ganha o protocolo <b>00001</b> e já vai para o mapa.',
+        det([['Data', '27/10/2026'], ['QTR (hora)', '14:30'], ['Origem', 'BOPM'], ['BOPM', 'TESTE-0001/2026'], ['Nome da vítima', 'MARIA TESTE DA SILVA'], ['Nome do autor', 'JOÃO TESTE'],
+          ['Telefone', '(11) 90000-0000'], ['Natureza', 'AMEAÇA'], ['Autor preso', 'NÃO'], ['Medida protetiva', 'SIM'], ['Nº da medida', 'TESTE-123/2026'], ['Reincidência', 'NÃO'],
+          ['Método de pesquisa', 'FILTRO POR BOPM'], ['Cia', '1ª CIA'], ['Bairro', 'JABAQUARA'], ['Endereço', 'RUA EXEMPLO DE TESTE, 100 — JABAQUARA', 1],
+          ['Breve histórico', 'Vítima relata ameaças por mensagem após a separação. Medida protetiva vigente. (EXEMPLO DE TESTE)', 1]])) +
+      ex(2, 'Contato com as Vítimas', 'O policial abre a ocorrência na lista, liga (veja <b>Como Falar com a Vítima</b>) e registra:',
+        det([['Ligação realizada', 'SIM'], ['Resultado', 'ATENDEU E ACEITOU O CONTATO'], ['Aceitou o contato', 'SIM'], ['Deseja visita', 'SIM'], ['Tipo de visita', 'VISITA SOLIDÁRIA'],
+          ['Dia da visita', '29/10/2026'], ['Hora', '15:00'], ['Novo telefone', '—'], ['Observações', 'Orientada sobre o app SP Mulher Segura e o 190. (TESTE)', 1]])) +
+      ex(3, 'Acompanhamento', 'A visita marcada aparece aqui. Ao concluir, informe o resultado, o BO-e e anexe o FONAR.',
+        '<div class="visit-card" style="max-width:520px"><div class="visit-badges"><span class="sequence-badge">1ª VISITA</span><span class="status-pill">ABERTA</span></div><h3>MARIA TESTE DA SILVA</h3>' +
+        '<div class="schedule">📅 29/10/2026 · 15:00</div><p>RUA EXEMPLO DE TESTE, 100 — JABAQUARA · 1ª CIA</p><p>Resultado ao concluir: ORIENTAÇÕES PRESTADAS · BO-e TESTE-555/2026 · FONAR anexado</p></div>') +
+      ex(4, 'Dados Numéricos', 'Escolha ano e mês. Exemplo de resumo do mês:',
+        '<div class="kpi-grid"><div class="card kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value">12</div></div><div class="card kpi-card"><div class="kpi-label">Ligações</div><div class="kpi-value">10</div></div><div class="card kpi-card"><div class="kpi-label">Visitas realizadas</div><div class="kpi-value">7</div></div><div class="card kpi-card"><div class="kpi-label">1ª Cia</div><div class="kpi-value">5</div></div><div class="card kpi-card"><div class="kpi-label">Medidas protetivas</div><div class="kpi-value">4</div></div></div>') +
+      ex(5, 'Consulta', 'Busca por “MARIA TESTE” ou “TESTE-0001”. Na ocorrência você vincula links de fotos e relatórios.',
+        tab(['Nº', 'Data', 'Vítima', 'BOPM', 'Cia', 'Visitas', 'Arquivos'], [['00001', '27/10/2026', 'MARIA TESTE DA SILVA', 'TESTE-0001/2026', '1ª CIA', '1 de 3', '2 links']])) +
+      ex(6, 'Mapa Estatístico', 'Escolha o período e clique em <b>Atualizar mapa</b>. O ponto do exemplo apareceria no Jabaquara; várias ocorrências próximas formam a “mancha” do mapa de calor.',
+        '<div class="mapa-exemplo"><span class="ponto" style="left:46%;top:52%"></span><span class="calor" style="left:40%;top:45%"></span><span class="calor fraco" style="left:62%;top:30%"></span><small>Ilustração</small></div>') +
+      ex(7, 'Livro de Registro', 'A ocorrência com ligação aparece para enviar. Marque, escolha o policial e clique em <b>Enviar</b>. O livro fica assim:',
+        tab(COL_LIVRO, [['00001', '27/10/2026', '(11) 90000-0000', 'MARIA TESTE DA SILVA', 'AMEAÇA', 'ATENDEU E ACEITOU O CONTATO', 'SIM', '29/10/2026 15:00', '000000-0', 'TESTE', '27/10/2026 16:10', '1ª CIA', '']])) +
+      ex(8, 'Gerador de Escala', 'Puxe o efetivo, gere e ajuste clicando nas células:',
+        tab(['Dia da semana', 'Dia', 'Viatura', 'Horário', 'Grad.', 'RE', 'QRA'], [['Segunda-feira', '2nov.', '1ª Cia', '10h00 às 22h00', 'SD', '000000-0', 'TESTE'], ['', '', '', '', 'CB', '111111-1', 'EXEMPLO']])) +
+      ex(9, 'Efetivo', 'Cadastro dos policiais usados nos seletores:', tab(['Cia', 'Grad.', 'RE', 'QRA'], [['1ª CIA', 'SD', '000000-0', 'TESTE'], ['1ª CIA', 'CB', '111111-1', 'EXEMPLO']])) +
+      ex(10, 'Rede de Apoio e 11 POP 2.09', 'Consulta rápida para orientar a vítima e seguir o procedimento. Não precisa preencher nada.', '') +
+      ex(12, 'Registro de Edições', 'Cada ação fica gravada e ninguém apaga:',
+        tab(['Data/hora', 'Conta', 'Ação', 'Módulo', 'Descrição'], [['27/10/2026 14:31', 'policial@exemplo.com', 'CADASTRO SALA', 'Mulher Segura', 'ID TESTE — nova ocorrência'], ['27/10/2026 16:10', 'policial@exemplo.com', 'CONTATO VÍTIMA', 'Mulher Segura', 'ID TESTE — contato registrado']])) +
+      ex(13, 'Como Falar com a Vítima', 'Guia de apoio com a sequência da ligação, frases úteis e sinais de risco.', '') +
+      '<div class="dica">Quer guardar este tutorial em PDF? Clique na impressora 🖨 no canto da tela e escolha <b>Salvar como PDF</b>.</div>';
+    C.querySelector('[data-acao=imprimir]').onclick = function () { imprimir(); };
+  }
+
+
+  /* ---------- ícones e grupos do menu lateral ---------- */
+  (function () {
+    var I = {
+      sala: '<path d="M9 4h6v3H9z"/><path d="M15 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M12 11v6M9 14h6"/>',
+      contato: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+      acompanhamento: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+      dados: '<path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/>',
+      consulta: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+      mapa: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+      livro: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/><path d="M9 7h7M9 11h5"/>',
+      escala: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M9 10v11M15 10v11M8 2v4M16 2v4"/>',
+      efetivo: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+      rede: '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
+      pop: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/>',
+      registro: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><rect x="9" y="10" width="6" height="5" rx="1"/><path d="M10 10V8.5a2 2 0 0 1 4 0V10"/>',
+      falar: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.2A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/>',
+      exemplo: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
+      admin: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
+    };
+    var GRUPOS = { sala: 'Operação', dados: 'Análise', livro: 'Gestão', rede: 'Apoio', registro: 'Sistema' };
+    [].forEach.call(document.querySelectorAll('.nav-button'), function (b) {
+      var pg = b.getAttribute('data-page'), sp = b.querySelector('span');
+      if (sp && I[pg]) { sp.className = 'nav-icone'; sp.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + I[pg] + '</svg>'; }
+      if (GRUPOS[pg]) { var g = document.createElement('p'); g.className = 'nav-grupo'; g.textContent = GRUPOS[pg]; b.parentNode.insertBefore(g, b); }
+      b.setAttribute('title', b.textContent.trim());
+    });
+  })();
+
+  /* ---------- ligação com as páginas Mulher Segura ---------- */
+  var TELAS = { livro: telaLivro, escala: telaEscala, efetivo: telaEfetivo, rede: telaRede, pop: telaPop, registro: telaRegistro, admin: telaAdmin, falar: telaFalar, exemplo: telaExemplo };
+  window.Extras = {
+    abrir: function (pg) { NAV++; C.removeAttribute('data-prot'); (TELAS[pg] || telaRede)(); },
+    dica: function (pg) { PAGINA = pg; dica(pg); var b = document.querySelector('.nav-button.active'); if (b && window.innerWidth < 980) b.scrollIntoView({ inline: 'center', block: 'nearest' }); },
+    iniciar: function (boot) {
+      dica(PAGINA);
+      srv('iniciar').then(function (r) {
+        EMAIL = r.email || ''; CONFIG = r.config || CONFIG; DONO = !!r.dono;
+        document.getElementById('menuAdmin').classList.toggle('hidden', !DONO);
+        document.body.classList.toggle('eh-admin', DONO);
+        aplicaConfig();
+      }).catch(function () { });
+    }
+  };
+})();
+</script>

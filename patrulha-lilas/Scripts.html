@@ -1,0 +1,1860 @@
+<script>
+(() => {
+  const state = {
+    bootstrap: null,
+    page: 'sala',
+    contacts: [],
+    contactSearchApplied: '',
+    visits: [],
+    dashboardData: null,
+    query: [],
+    mapData: null,
+    maps: { heat: null, points: null },
+    mapLayers: { heat: null, points: null },
+    activeMapTab: 'heat',
+    mapBoundaryStatus: null,
+    fonarUpload: { inProgress: false, nonce: '', file: null, popup: null, pollTimer: null }
+  };
+
+  const pageMeta = {
+    sala: ['Cadastro Sala de Operações', 'Primeiro cadastro da ocorrência a partir do BOPM, BOPC ou outra fonte.'],
+    contato: ['Contato com as Vítimas', 'Consulta dos dados iniciais e registro das informações obtidas por telefone.'],
+    acompanhamento: ['Acompanhamento', 'Agenda das visitas abertas, com reagendamento e continuidade do acompanhamento da mesma vítima.'],
+    dados: ['Dados Numéricos', 'Indicadores, gráficos e painel gerencial do Programa Mulher Segura.'],
+    consulta: ['Consulta', 'Pesquisa das ocorrências e vinculação de relatórios, fotos e outros arquivos.'],
+    mapa: ['Mapa Estatístico', 'Mapa de calor e pontos das ocorrências nas áreas da 1ª, 2ª e 3ª Cia do 3º BPM/M.']
+  };
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  async function init() {
+    bindStaticEvents();
+    try {
+      state.bootstrap = await server('getBootstrapData');
+      document.getElementById('currentUser').textContent = state.bootstrap.currentUser || 'Conta Google';
+      buildSalaForm();
+      buildContactForm();
+      populateFilters();
+      configureVisitTimeInputs();
+      setSalaDefaults();
+      setMapDefaults();
+      state.mapBoundaryStatus = state.bootstrap.mapBoundaryStatus || null;
+      renderMapBoundaryStatus(state.mapBoundaryStatus);
+      if (window.Extras) window.Extras.iniciar(state.bootstrap);
+    } catch (error) {
+      if (/ACESSO_NEGADO/.test(error.message)) {
+        document.querySelector('.main-content').innerHTML = '<div class="card" style="padding:28px;max-width:640px;margin:40px auto"><span class="eyebrow">Acesso restrito</span><h2 style="margin:6px 0 10px">Sua conta ainda não foi liberada</h2><p>' +
+          escapeHtml(error.message.replace('ACESSO_NEGADO: ', '')) + '</p><p class="muted">Depois de liberado, recarregue esta página.</p></div>';
+        document.querySelector('.nav-menu').classList.add('hidden');
+      } else showToast(error.message, 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function askConfirmation(message) {
+    return window.confirm(message);
+  }
+
+  function bindStaticEvents() {
+    document.querySelectorAll('.nav-button').forEach(button => {
+      button.addEventListener('click', () => switchPage(button.dataset.page));
+    });
+    document.getElementById('refreshButton').addEventListener('click', refreshCurrentPage);
+    document.getElementById('salaForm').addEventListener('submit', submitSalaForm);
+    document.getElementById('salaForm').addEventListener('reset', () => setTimeout(setSalaDefaults, 0));
+    document.getElementById('contactForm').addEventListener('submit', submitContactForm);
+    document.getElementById('contactSearchButton').addEventListener('click', loadPendingContacts);
+    document.getElementById('contactReportButton').addEventListener('click', openContactReportModal);
+    document.getElementById('contactReportForm').addEventListener('submit', generateContactReport);
+    document.getElementById('contactSearch').addEventListener('keydown', event => { if (event.key === 'Enter') loadPendingContacts(); });
+    document.getElementById('visitSearchButton').addEventListener('click', loadOpenVisits);
+    document.getElementById('visitReportButton').addEventListener('click', printOpenVisitsReport);
+    document.getElementById('visitSearch').addEventListener('keydown', event => { if (event.key === 'Enter') loadOpenVisits(); });
+    document.getElementById('dashboardRefresh').addEventListener('click', loadDashboard);
+    document.getElementById('dashboardYear').addEventListener('change', loadDashboard);
+    document.getElementById('dashboardMonth').addEventListener('change', loadDashboard);
+    document.getElementById('dashboardPrintButton').addEventListener('click', printDashboardReport);
+    document.getElementById('queryButton').addEventListener('click', loadConsulta);
+    document.getElementById('querySearch').addEventListener('keydown', event => { if (event.key === 'Enter') loadConsulta(); });
+    document.getElementById('queryOnlyFiles').addEventListener('change', loadConsulta);
+    ['queryVisit1', 'queryVisit2', 'queryVisit3'].forEach(id => document.getElementById(id).addEventListener('change', loadConsulta));
+    document.getElementById('mapSearchButton').addEventListener('click', loadMapStatistics);
+    document.getElementById('mapGeocodeButton').addEventListener('click', processPendingMapAddresses);
+    document.getElementById('mapBoundaryAutoButton').addEventListener('click', downloadFull12BPMMKml);
+    document.getElementById('mapBoundaryChooseButton').addEventListener('click', () => document.getElementById('mapBoundaryFile').click());
+    document.getElementById('mapBoundaryFile').addEventListener('change', importMapBoundaryFile);
+    document.querySelectorAll('[data-map-tab]').forEach(button => button.addEventListener('click', () => switchMapTab(button.dataset.mapTab)));
+    document.getElementById('visitForm').addEventListener('submit', submitVisitForm);
+    document.getElementById('visitAction').addEventListener('change', toggleVisitActionFields);
+    document.getElementById('visitFonarPreenchido').addEventListener('change', toggleVisitExtraFields);
+    document.getElementById('visitFonarFile').addEventListener('change', beginFonarUserDriveUpload);
+    window.addEventListener('message', handleFonarUploaderMessage);
+    document.getElementById('visitBoeNumber').addEventListener('input', event => {
+      const required = document.getElementById('visitAction').value !== 'REAGENDAR';
+      event.currentTarget.setCustomValidity(required && !event.currentTarget.value.trim()
+        ? 'Informe obrigatoriamente o número do BO-e de visita complementar para concluir a visita.'
+        : '');
+    });
+    document.getElementById('visitRealizedDate').addEventListener('change', updateSecondVisitDeadline);
+    document.getElementById('nextVisitDate').addEventListener('change', validateSecondVisitDeadlineInput);
+    document.getElementById('filesForm').addEventListener('submit', submitFilesForm);
+    document.querySelectorAll('[data-close-modal]').forEach(element => {
+      element.addEventListener('click', () => closeModal(element.dataset.closeModal));
+    });
+  }
+
+  function buildSalaForm() {
+    document.getElementById('salaFields').innerHTML = state.bootstrap.salaFields.map(field => renderField(field, 'sala')).join('');
+    const medida = document.getElementById('sala-medidaProtetiva');
+    if (medida) medida.addEventListener('change', toggleSalaConditionalFields);
+    const origem = document.getElementById('sala-origemRegistro');
+    if (origem) origem.addEventListener('change', toggleSalaConditionalFields);
+    toggleSalaConditionalFields();
+  }
+
+  function buildContactForm() {
+    document.getElementById('contactFields').innerHTML = state.bootstrap.contatoFields.map(field => renderField(field, 'contact')).join('');
+    ['ligacaoRealizada', 'desejaVisita'].forEach(key => {
+      const element = document.getElementById('contact-' + key);
+      if (element) element.addEventListener('change', toggleContactFields);
+    });
+    toggleContactFields();
+  }
+
+  function configureVisitTimeInputs() {
+    const schedule = state.bootstrap?.visitSchedule || { minTime: '13:00', maxTime: '19:00' };
+    ['contact-horaVisita', 'visitScheduledTime', 'nextVisitTime'].forEach(id => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.min = schedule.minTime;
+      input.max = schedule.maxTime;
+      input.step = 300;
+      input.title = 'Agendamento permitido somente das 13h00 às 19h00';
+      input.addEventListener('input', () => input.setCustomValidity(''));
+    });
+    const contactTime = document.getElementById('contact-horaVisita');
+    if (contactTime && !contactTime.parentElement.querySelector('.schedule-window-note')) {
+      contactTime.insertAdjacentHTML('afterend', '<small class="schedule-window-note">Agendamento permitido somente das 13h00 às 19h00.</small>');
+    }
+  }
+
+  function renderField(field, prefix) {
+    const id = prefix + '-' + field.key;
+    const required = field.required ? ' required' : '';
+    const wide = field.type === 'textarea' || ['breveHistorico', 'enderecoVitima'].includes(field.key) ? ' wide' : '';
+    let control = '';
+    if (field.type === 'select') {
+      control = `<select id="${id}" name="${field.key}"${required}><option value="">SELECIONE</option>${(field.options || []).map(option => `<option value="${escapeAttr(option)}">${escapeHtml(option)}</option>`).join('')}</select>`;
+    } else if (field.type === 'textarea') {
+      control = `<textarea id="${id}" name="${field.key}" rows="4"${required}></textarea>`;
+    } else {
+      const type = ['date', 'time', 'tel', 'number'].includes(field.type) ? field.type : 'text';
+      control = `<input id="${id}" name="${field.key}" type="${type}"${required}>`;
+    }
+    return `<div class="field${wide}" data-field-key="${field.key}"><label for="${id}">${escapeHtml(field.label)}${field.required ? ' *' : ''}</label>${control}</div>`;
+  }
+
+  function populateFilters() {
+    const years = state.bootstrap.years;
+    fillSelect('dashboardYear', years.map(year => ({ value: year, label: year })), state.bootstrap.currentYear);
+    fillSelect('dashboardMonth', state.bootstrap.months, 0);
+    fillSelect('queryYear', [{ value: 0, label: 'TODOS' }, ...years.map(year => ({ value: year, label: year }))], state.bootstrap.currentYear);
+    fillSelect('queryMonth', state.bootstrap.months, state.bootstrap.currentMonth);
+    fillSelect('visitCia', [{ value: '', label: 'TODAS' }, ...state.bootstrap.options.CIA.map(value => ({ value, label: value }))], '');
+    fillSelect('mapCia', [{ value: '', label: 'TODAS AS 3 CIAS' }, ...(state.bootstrap.mapConfig?.companies || ['1ª CIA', '2ª CIA', '3ª CIA']).map(value => ({ value, label: value }))], '');
+    const mapSourceLink = document.getElementById('mapSourceLink');
+    if (mapSourceLink && state.bootstrap.mapConfig?.sourceMapUrl) {
+      mapSourceLink.href = state.bootstrap.mapConfig.sourceMapUrl;
+    }
+    fillSelect('visitResult', [{ value: '', label: 'SELECIONE' }, ...state.bootstrap.options.RESULTADO_VISITA.map(value => ({ value, label: value }))], '');
+    const visitTypeOptions = [{ value: '', label: 'SELECIONE' }, ...state.bootstrap.options.TIPO_VISITA.map(value => ({ value, label: value }))];
+    fillSelect('visitType', visitTypeOptions, '');
+    fillSelect('nextVisitType', visitTypeOptions, '');
+  }
+
+  function fillSelect(id, options, selected) {
+    const select = document.getElementById(id);
+    select.innerHTML = options.map(option => `<option value="${escapeAttr(option.value)}"${String(option.value) === String(selected) ? ' selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+  }
+
+  function setSalaDefaults() {
+    const form = document.getElementById('salaForm');
+    if (!form) return;
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const dateInput = document.getElementById('sala-dataOcorrencia');
+    const timeInput = document.getElementById('sala-qtr');
+    if (dateInput && !dateInput.value) dateInput.value = date;
+    if (timeInput && !timeInput.value) timeInput.value = time;
+    toggleSalaConditionalFields();
+  }
+
+  function setMapDefaults() {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const from = document.getElementById('mapDateFrom');
+    const to = document.getElementById('mapDateTo');
+    if (from && !from.value) from.value = localDateInput(startOfYear);
+    if (to && !to.value) to.value = localDateInput(now);
+  }
+
+  function toggleSalaConditionalFields() {
+    const medida = document.getElementById('sala-medidaProtetiva')?.value;
+    setFieldVisibility('salaFields', 'numeroMedida', medida === 'SIM', medida === 'SIM');
+    const origem = document.getElementById('sala-origemRegistro')?.value || '';
+    setFieldVisibility('salaFields', 'bopm', ['BOPM', 'BOPM E BOPC'].includes(origem), ['BOPM', 'BOPM E BOPC'].includes(origem));
+    setFieldVisibility('salaFields', 'bopc', ['BOPC', 'BOPM E BOPC'].includes(origem), ['BOPC', 'BOPM E BOPC'].includes(origem));
+  }
+
+  function toggleContactFields() {
+    const callMade = document.getElementById('contact-ligacaoRealizada')?.value === 'SIM';
+    ['resultadoLigacao', 'aceitouLigacao', 'desejaVisita'].forEach(key => setFieldVisibility('contactFields', key, callMade, callMade));
+    const wantsVisit = callMade && document.getElementById('contact-desejaVisita')?.value === 'SIM';
+    ['tipoVisita', 'dataVisita', 'horaVisita'].forEach(key => setFieldVisibility('contactFields', key, wantsVisit, wantsVisit));
+    ['telefoneAtualizado', 'observacoesContato'].forEach(key => setFieldVisibility('contactFields', key, true, false));
+  }
+
+  function setFieldVisibility(containerId, key, visible, required) {
+    const container = document.getElementById(containerId);
+    const wrapper = container?.querySelector(`[data-field-key="${key}"]`);
+    if (!wrapper) return;
+    wrapper.classList.toggle('hidden', !visible);
+    const input = wrapper.querySelector('input,select,textarea');
+    if (input) {
+      input.required = Boolean(required);
+      if (!visible) input.value = '';
+    }
+  }
+
+  async function switchPage(page) {
+    state.page = page;
+    const extra = !pageMeta[page];
+    document.querySelectorAll('.nav-button').forEach(button => button.classList.toggle('active', button.dataset.page === page));
+    document.querySelectorAll('.page').forEach(section => section.classList.toggle('active', section.id === 'page-' + (extra ? 'extra' : page)));
+    if (!extra) {
+      document.getElementById('pageTitle').textContent = pageMeta[page][0];
+      document.getElementById('pageSubtitle').textContent = pageMeta[page][1];
+    }
+    if (window.Extras) window.Extras.dica(page);
+    if (window.innerWidth < 980) document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth' });
+    await refreshCurrentPage();
+  }
+
+  async function refreshCurrentPage() {
+    if (state.page === 'contato') return loadPendingContacts();
+    if (state.page === 'acompanhamento') return loadOpenVisits();
+    if (state.page === 'dados') return loadDashboard();
+    if (state.page === 'consulta') return loadConsulta();
+    if (state.page === 'mapa') return loadMapStatistics();
+    if (!pageMeta[state.page] && window.Extras) return window.Extras.abrir(state.page);
+  }
+
+  async function submitSalaForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!askConfirmation('Confirma o cadastro desta ocorrência na Sala de Operações?')) return;
+    const payload = Object.fromEntries(new FormData(form).entries());
+    setBusy(true, 'Registrando ocorrência...');
+    try {
+      const response = await server('salvarCadastroSala', payload);
+      const box = document.getElementById('salaSuccess');
+      box.innerHTML = `✓ ${escapeHtml(response.message)} Protocolo: <strong>${escapeHtml(response.id)}</strong>.`;
+      box.classList.remove('hidden');
+      showToast(response.message, 'success');
+      form.reset();
+      setSalaDefaults();
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openContactReportModal() {
+    const search = String(state.contactSearchApplied || '').trim();
+    const count = Array.isArray(state.contacts) ? state.contacts.length : 0;
+    document.getElementById('contactReportFilterLabel').textContent = search
+      ? `Pesquisa: “${search}”`
+      : 'Todas as ocorrências pendentes exibidas';
+    document.getElementById('contactReportCountLabel').textContent = `${count} ocorrência${count === 1 ? '' : 's'} exibida${count === 1 ? '' : 's'}`;
+    if (!count) {
+      showToast('Não há ocorrências exibidas em Contato com as Vítimas para imprimir.', 'error');
+      return;
+    }
+    openModal('contactReportModal');
+  }
+
+  async function generateContactReport(event) {
+    event.preventDefault();
+    const visibleIds = (state.contacts || []).map(record => String(record.id || '').trim()).filter(Boolean);
+    const search = String(state.contactSearchApplied || '').trim();
+    if (!visibleIds.length) {
+      showToast('Não há ocorrências exibidas em Contato com as Vítimas para imprimir.', 'error');
+      closeModal('contactReportModal');
+      return;
+    }
+
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+      showToast('O navegador bloqueou a nova aba. Permita pop-ups para gerar o relatório.', 'error');
+      return;
+    }
+    reportWindow.document.open();
+    reportWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Gerando relatório...</title></head><body style="font-family:Arial,sans-serif;padding:32px;color:#45205a"><h2>Gerando relatório dos contatos...</h2><p>Aguarde alguns instantes.</p></body></html>');
+    reportWindow.document.close();
+
+    setBusy(true, 'Preparando relatório dos contatos...');
+    try {
+      const report = await server('getContactReportData', { ids: visibleIds, search });
+      const brandImage = document.querySelector('.brand-hero-image')?.src || document.querySelector('.brand-mark-photo')?.src || '';
+      reportWindow.document.open();
+      reportWindow.document.write(buildContactReportHtml(report, brandImage));
+      reportWindow.document.close();
+      closeModal('contactReportModal');
+      showToast(`${report.summary.total} ocorrência(s) exibida(s) em Contato com as Vítimas incluída(s) no relatório.`, 'success');
+      setTimeout(() => {
+        try { reportWindow.focus(); reportWindow.print(); } catch (error) {}
+      }, 700);
+    } catch (error) {
+      reportWindow.close();
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function buildContactReportHtml(report, brandImage) {
+    const summary = report.summary || {};
+    const records = report.records || [];
+    const reportItems = records.length ? records.map((record, index) => `
+      <article class="occurrence-row">
+        <header class="occurrence-header">
+          <div class="occurrence-title"><span class="sequence">${index + 1}</span><div><strong>${escapeHtml(record.nomeVitima || 'Vítima não informada')}</strong><small>${escapeHtml(record.id || '')}</small></div></div>
+          <div class="occurrence-meta"><span>${escapeHtml(record.cia || 'CIA não informada')}</span><b>${escapeHtml(record.dataOcorrencia || '—')} ${escapeHtml(record.qtr || '')}</b></div>
+        </header>
+        <div class="occurrence-grid">
+          ${printDetail('Telefone', record.telefoneAtualizado || record.telefoneOriginal || 'Não informado')}
+          ${printDetail('BOPM / BOPC', [record.bopm, record.bopc].filter(Boolean).join(' / ') || 'Não informado')}
+          ${printDetail('Natureza', record.natureza || 'Não informada')}
+          ${printDetail('Autor', record.nomeAutor || 'Não informado')}
+          ${printDetail('Autor preso', record.autorPreso || 'Não informado')}
+          ${printDetail('Medida protetiva', record.medidaProtetiva === 'SIM' && record.numeroMedida ? `SIM — ${record.numeroMedida}` : (record.medidaProtetiva || 'Não informado'))}
+          ${printDetail('Endereço', [record.enderecoVitima, record.bairro].filter(Boolean).join(' — ') || 'Não informado', true)}
+          ${printDetail('Ligação / resultado', record.ligacaoRealizada ? `${record.ligacaoRealizada}${record.resultadoLigacao ? ' — ' + record.resultadoLigacao : ''}` : 'Aguardando preenchimento')}
+          ${printDetail('Aceitou contato / deseja visita', record.aceitouLigacao || record.desejaVisita ? `${record.aceitouLigacao || '—'} / ${record.desejaVisita || '—'}` : 'Aguardando preenchimento')}
+          ${printDetail('Agendamento', record.desejaVisita === 'SIM' ? `${record.tipoVisita || 'Visita'} — ${record.dataVisita || 'data não informada'} às ${record.horaVisita || 'horário não informado'}` : 'Sem visita agendada')}
+          ${record.breveHistorico ? printDetail('Breve histórico', record.breveHistorico, true) : ''}
+          ${record.observacoesContato ? printDetail('Observações do contato', record.observacoesContato, true) : ''}
+        </div>
+      </article>`).join('') : '<div class="empty-report">Nenhuma ocorrência está exibida em Contato com as Vítimas.</div>';
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório - Contato com as Vítimas - Mulher Segura</title>
+<style>
+  @page{size:A4 portrait;margin:6mm}
+  *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#30263a;background:#fff;font-size:8.5px}
+  .no-print{display:flex;justify-content:flex-end;gap:7px;margin:0 auto 8px;max-width:198mm}.no-print button{border:0;border-radius:6px;padding:8px 12px;font-weight:700;cursor:pointer}.print-btn{background:#6f368f;color:#fff}.close-btn{background:#eee6f2;color:#5d2e7c}
+  .report{max-width:198mm;margin:0 auto}.report-header{display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:9px;padding:7px 9px;border:1px solid #d9bce9;border-radius:9px;background:#f7f0fa;margin-bottom:6px}
+  .report-header img{width:46px;height:52px;object-fit:cover;object-position:center top;border-radius:7px;border:1px solid #fff}.report-header h1{margin:0 0 2px;color:#45205a;font-size:15px}.report-header p{margin:1px 0;color:#6f6278;font-size:7.5px}.report-header .unit{text-align:right;color:#5d2e7c;font-weight:800}.report-header .unit strong{display:block;font-size:11px}.report-header .unit small{display:block;margin-top:2px;color:#776c80;font-weight:400;font-size:7px}
+  .filter-line{padding:5px 7px;border-left:3px solid #7a3fa0;background:#f8f3fb;margin-bottom:6px;color:#5c5162}.filter-line strong{color:#45205a}
+  .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:7px}.summary-card{border:1px solid #eadcf3;border-radius:6px;padding:4px 6px;background:#fff}.summary-card span{display:block;color:#776c80;text-transform:uppercase;font-size:5.8px;font-weight:800;letter-spacing:.03em}.summary-card strong{display:block;margin-top:2px;color:#5d2e7c;font-size:13px}
+  .occurrence-row{border:1px solid #d8cce0;border-radius:7px;margin:0 0 5px;overflow:hidden;break-inside:avoid-page;page-break-inside:avoid}
+  .occurrence-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 6px;background:#f3eaf8;border-bottom:1px solid #e6d8ee}.occurrence-title{display:flex;align-items:center;gap:6px}.sequence{display:grid;place-items:center;width:20px;height:20px;border-radius:5px;background:#6f368f;color:#fff;font-weight:900;font-size:8px}.occurrence-header strong{display:block;color:#45205a;font-size:10px}.occurrence-header small{display:block;color:#776c80;font-size:6.5px}.occurrence-meta{text-align:right}.occurrence-meta span{display:inline-block;background:#fff;border:1px solid #d9bce9;border-radius:999px;padding:2px 5px;color:#5d2e7c;font-weight:800;font-size:6.5px}.occurrence-meta b{display:block;margin-top:2px;color:#4d4352;font-size:7px}
+  .occurrence-grid{display:grid;grid-template-columns:repeat(4,1fr)}.detail{padding:4px 5px;border-right:1px solid #eee5f2;border-bottom:1px solid #eee5f2;min-height:31px}.detail:nth-child(4n){border-right:0}.detail.full{grid-column:1/-1;border-right:0;min-height:auto}.detail span{display:block;color:#806f89;text-transform:uppercase;font-size:5.7px;font-weight:800;letter-spacing:.03em;margin-bottom:2px}.detail strong{display:block;color:#30263a;font-size:7.4px;line-height:1.25;white-space:pre-wrap;overflow-wrap:anywhere}.empty-report{padding:24px;text-align:center;border:1px dashed #d9bce9;border-radius:8px;color:#776c80}
+  .footer{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:5px;border-top:1px solid #dfd3e6;color:#776c80;font-size:6.5px}
+  @media print{.no-print{display:none!important}.report{max-width:none}.occurrence-row{box-shadow:none}}
+  @media(max-width:700px){.summary{grid-template-columns:repeat(2,1fr)}.report-header{grid-template-columns:45px 1fr}.report-header .unit{grid-column:1/-1;text-align:left}.occurrence-grid{grid-template-columns:1fr 1fr}.detail:nth-child(4n){border-right:1px solid #eee5f2}.detail:nth-child(2n){border-right:0}}
+</style>
+</head>
+<body>
+<div class="no-print"><button class="close-btn" onclick="window.close()">Fechar</button><button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button></div>
+<main class="report">
+  <header class="report-header">
+    ${brandImage ? `<img src="${escapeAttr(brandImage)}" alt="SP Mulher Segura">` : '<div></div>'}
+    <div><h1>Relatório das Ocorrências em Contato com as Vítimas</h1><p>Programa SP Mulher Segura — 3º BPM/M</p><p>Somente as ocorrências exibidas na Página 2, uma abaixo da outra.</p></div>
+    <div class="unit"><strong>3º BPM/M</strong><small>Gerado em ${escapeHtml(report.generatedAt || '')}</small></div>
+  </header>
+  <div class="filter-line"><strong>Filtro da Página 2:</strong> ${escapeHtml(report.filterLabel || 'TODAS AS OCORRÊNCIAS PENDENTES EXIBIDAS')} &nbsp;·&nbsp; <strong>Registros:</strong> ${summary.total || 0}</div>
+  <section class="summary">
+    ${summaryCard('Ocorrências exibidas', summary.total || 0)}
+    ${summaryCard('Contatos preenchidos', summary.contatosPreenchidos || 0)}
+    ${summaryCard('Ligações realizadas', summary.ligacoesRealizadas || 0)}
+    ${summaryCard('Aceitaram contato', summary.aceitaramContato || 0)}
+    ${summaryCard('Solicitaram visita', summary.solicitaramVisita || 0)}
+  </section>
+  <section>${reportItems}</section>
+  <footer class="footer"><span>Gerado por: ${escapeHtml(report.generatedBy || 'Conta Google')}</span><span>Total de ${summary.total || 0} ocorrência(s)</span></footer>
+</main>
+</body></html>`;
+  }
+
+  function printDetail(label, value, wide) {
+    return `<div class="detail${wide ? ' full' : ''}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || 'Não informado')}</strong></div>`;
+  }
+
+  function summaryCard(label, value) {
+    return `<div class="summary-card"><span>${escapeHtml(label)}</span><strong>${Number(value) || 0}</strong></div>`;
+  }
+
+  async function loadPendingContacts() {
+    setSectionLoading('contactList');
+    const search = String(document.getElementById('contactSearch').value || '').trim();
+    try {
+      state.contacts = await server('getPendingContacts', { search });
+      state.contactSearchApplied = search;
+      document.getElementById('contactCount').textContent = state.contacts.length;
+      renderContactList();
+    } catch (error) {
+      showToast(error.message, 'error');
+      document.getElementById('contactList').innerHTML = emptyHtml('Não foi possível carregar as ocorrências.');
+    }
+  }
+
+  function renderContactList() {
+    const list = document.getElementById('contactList');
+    if (!state.contacts.length) {
+      list.innerHTML = emptyHtml('Nenhuma ocorrência aguardando contato.');
+      clearContactWorkspace();
+      return;
+    }
+    list.innerHTML = state.contacts.map((record, index) => `
+      <article class="record-item" data-contact-index="${index}">
+        <div class="record-item-top"><strong>${escapeHtml(record.nomeVitima || 'Sem nome')}</strong><small>${formatDate(record.dataOcorrencia)}</small></div>
+        <div class="record-meta"><span>${escapeHtml(record.cia || 'CIA não informada')}</span><span>${escapeHtml(record.natureza || 'Natureza não informada')}</span><span>${escapeHtml(record.telefoneAtualizado || record.telefoneOriginal || 'Sem telefone')}</span></div>
+      </article>`).join('');
+    list.querySelectorAll('[data-contact-index]').forEach(item => item.addEventListener('click', () => selectContact(Number(item.dataset.contactIndex), item)));
+  }
+
+  function selectContact(index, element) {
+    const record = state.contacts[index];
+    document.querySelectorAll('.record-item').forEach(item => item.classList.remove('selected'));
+    element?.classList.add('selected');
+    document.getElementById('contactEmpty').classList.add('hidden');
+    document.getElementById('contactWorkspace').classList.remove('hidden');
+    document.getElementById('contactVictimTitle').textContent = record.nomeVitima || 'Ocorrência';
+    document.getElementById('contactIdBadge').textContent = record.id;
+    document.getElementById('contactRecordId').value = record.id;
+    const details = [
+      ['Data / QTR', `${formatDate(record.dataOcorrencia)} ${record.qtr || ''}`], ['BOPM', record.bopm], ['BOPC', record.bopc],
+      ['Vítima', record.nomeVitima], ['Autor', record.nomeAutor], ['Telefone', record.telefoneAtualizado || record.telefoneOriginal],
+      ['Natureza', record.natureza], ['Autor preso', record.autorPreso], ['Medida protetiva', record.medidaProtetiva === 'SIM' ? `SIM${record.numeroMedida ? ' – ' + record.numeroMedida : ''}` : record.medidaProtetiva],
+      ['Endereço', `${record.enderecoVitima || ''}${record.bairro ? ' – ' + record.bairro : ''}`], ['CIA', record.cia], ['Breve histórico', record.breveHistorico, true]
+    ];
+    document.getElementById('contactSourceDetails').innerHTML = details.map(item => detailHtml(item[0], item[1], item[2])).join('');
+    state.bootstrap.contatoFields.forEach(field => {
+      const input = document.getElementById('contact-' + field.key);
+      if (input) input.value = record[field.key] || '';
+    });
+    toggleContactFields();
+  }
+
+  function clearContactWorkspace() {
+    document.getElementById('contactEmpty').classList.remove('hidden');
+    document.getElementById('contactWorkspace').classList.add('hidden');
+    document.getElementById('contactForm').reset();
+    document.getElementById('contactRecordId').value = '';
+  }
+
+  async function submitContactForm(event) {
+    event.preventDefault();
+    if (!askConfirmation('Confirma o cadastro das informações de contato com a vítima?')) return;
+    const wantsVisit = document.getElementById('contact-desejaVisita')?.value === 'SIM';
+    if (wantsVisit && !validateVisitTimeInput('contact-horaVisita', 'O horário da visita')) return;
+    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    payload.id = document.getElementById('contactRecordId').value;
+    setBusy(true, 'Salvando contato...');
+    try {
+      const response = await server('salvarContatoVitima', payload);
+      showToast(response.message, 'success');
+      clearContactWorkspace();
+      await loadPendingContacts();
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function printOpenVisitsReport() {
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+      showToast('O navegador bloqueou a nova aba. Permita pop-ups para imprimir o relatório.', 'error');
+      return;
+    }
+    reportWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Preparando relatório...</title></head><body style="font-family:Arial,sans-serif;padding:30px">Preparando relatório das visitas...</body></html>');
+    reportWindow.document.close();
+
+    const search = document.getElementById('visitSearch').value.trim();
+    const cia = document.getElementById('visitCia').value;
+    setBusy(true, 'Preparando relatório das visitas...');
+    try {
+      const visits = await server('getOpenVisits', { search: search, cia: cia });
+      state.visits = visits || [];
+      document.getElementById('visitCount').textContent = state.visits.length;
+      renderOpenVisits();
+
+      if (!state.visits.length) {
+        reportWindow.close();
+        showToast('Não há visitas em aberto para os filtros selecionados.', 'error');
+        return;
+      }
+
+      const brandImage = document.querySelector('.brand-hero-image')?.src || document.querySelector('.brand-mark-photo')?.src || '';
+      reportWindow.document.open();
+      reportWindow.document.write(buildOpenVisitsReportHtml(state.visits, { search: search, cia: cia }, brandImage));
+      reportWindow.document.close();
+      setTimeout(() => { try { reportWindow.focus(); reportWindow.print(); } catch (error) {} }, 650);
+    } catch (error) {
+      try { reportWindow.close(); } catch (closeError) {}
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function buildOpenVisitsReportHtml(visits, filters, brandImage) {
+    const generatedAt = new Date().toLocaleString('pt-BR');
+    const searchLabel = filters.search ? `Pesquisa: ${filters.search}` : 'Pesquisa: todas as visitas em aberto';
+    const ciaLabel = filters.cia ? `CIA: ${filters.cia}` : 'CIA: todas';
+
+    const cards = visits.map((record, index) => {
+      const telefone = record.telefoneAtualizado || record.telefoneOriginal || 'Não informado';
+      const endereco = `${record.enderecoVitima || 'Não informado'}${record.bairro ? ' – ' + record.bairro : ''}`;
+      const documentos = [record.bopm ? `BOPM: ${record.bopm}` : '', record.bopc ? `BOPC: ${record.bopc}` : ''].filter(Boolean).join(' | ') || 'Não informado';
+      const medida = record.medidaProtetiva === 'SIM'
+        ? `SIM${record.numeroMedida ? ' — Nº ' + record.numeroMedida : ''}`
+        : (record.medidaProtetiva || 'Não informado');
+      const seq = formatVisitSequence(record.sequencia);
+      const secondVisitDays = Number(record.secondVisitDaysRemaining);
+      const deadlineText = Number(record.sequencia || 1) === 2 && record.secondVisitDeadline
+        ? `${secondVisitDays < 0 ? 'PRAZO VENCIDO' : 'DATA-LIMITE'}: ${formatDate(record.secondVisitDeadline)}${Number.isFinite(secondVisitDays) ? (secondVisitDays < 0 ? ` — vencido há ${Math.abs(secondVisitDays)} dia${Math.abs(secondVisitDays) === 1 ? '' : 's'}` : (secondVisitDays === 0 ? ' — vence hoje' : ` — faltam ${secondVisitDays} dia${secondVisitDays === 1 ? '' : 's'}`)) : ''}`
+        : '';
+      return `<section class="visit-sheet">
+        <div class="visit-title-row">
+          <div><span class="visit-number">${index + 1}</span><h2>${escapeHtml(record.nomeVitima || 'Vítima não informada')}</h2></div>
+          <div class="visit-tags"><span>${escapeHtml(seq)}</span><span>${escapeHtml(record.tipoVisita || 'Tipo não informado')}</span><span>${escapeHtml(record.cia || 'CIA não informada')}</span></div>
+        </div>
+        <div class="schedule"><strong>VISITA AGENDADA:</strong> ${escapeHtml(formatDate(record.dataVisita))} às ${escapeHtml(formatTime(record.horaVisita))}${deadlineText ? `<small>${escapeHtml(deadlineText)}</small>` : ''}</div>
+        <div class="data-grid">
+          <div><label>Telefone</label><b>${escapeHtml(telefone)}</b></div>
+          <div class="wide"><label>Endereço</label><b>${escapeHtml(endereco)}</b></div>
+          <div><label>Natureza</label><b>${escapeHtml(record.natureza || 'Não informada')}</b></div>
+          <div><label>Data da ocorrência / QTR</label><b>${escapeHtml(formatDate(record.dataOcorrencia))}${record.qtr ? ' — ' + escapeHtml(record.qtr) : ''}</b></div>
+          <div><label>BOPM / BOPC</label><b>${escapeHtml(documentos)}</b></div>
+          <div><label>Autor</label><b>${escapeHtml(record.nomeAutor || 'Não informado')}</b></div>
+          <div><label>Autor preso</label><b>${escapeHtml(record.autorPreso || 'Não informado')}</b></div>
+          <div><label>Medida protetiva</label><b>${escapeHtml(medida)}</b></div>
+          <div><label>Resultado do contato</label><b>${escapeHtml(record.resultadoLigacao || 'Não informado')}</b></div>
+          <div class="wide"><label>Breve histórico</label><p>${escapeHtml(record.breveHistorico || 'Não informado')}</p></div>
+          ${record.observacoesContato ? `<div class="wide"><label>Observações do contato</label><p>${escapeHtml(record.observacoesContato)}</p></div>` : ''}
+          ${record.observacoesVisita ? `<div class="wide"><label>Orientações / observações da visita</label><p>${escapeHtml(record.observacoesVisita)}</p></div>` : ''}
+        </div>
+        <div class="field-return">
+          <h3>REGISTRO PARA PREENCHIMENTO PELA EQUIPE APÓS A VISITA</h3>
+          <div class="new-visit-line"><strong>A vítima deseja uma nova visita?</strong> <span class="boxcheck"></span> SIM &nbsp;&nbsp; <span class="boxcheck"></span> NÃO</div>
+          <div class="new-visit-line"><strong>Em caso positivo:</strong> &nbsp; <strong>Data sugerida:</strong> ____ / ____ / ________ &nbsp;&nbsp;&nbsp; <strong>Horário sugerido:</strong> ____ : ____</div>
+          <div class="visit-schedule-reminder"><strong>LEMBRETE:</strong> As visitas devem ser marcadas durante a semana, entre 13h00 e 19h00.</div>
+          <div class="notes-line"><strong>Observações da equipe:</strong><div></div><div></div></div>
+        </div>
+      </section>`;
+    }).join('');
+
+    return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório de Visitas - Mulher Segura</title><style>
+      @page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#30263a;font-size:9px;background:#fff}.actions{max-width:194mm;margin:0 auto 8px;display:flex;justify-content:flex-end;gap:8px}.actions button{border:0;border-radius:7px;padding:8px 12px;font-weight:800;cursor:pointer}.primary{background:#6f368f;color:#fff}.secondary{background:#eee6f2;color:#5d2e7c}.report{max-width:194mm;margin:auto}.header{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;border:1px solid #d9bce9;background:#f8f2fb;border-radius:10px;padding:9px 10px;margin-bottom:7px}.header img{width:56px;height:62px;object-fit:cover;border-radius:8px}.header h1{font-size:16px;margin:0;color:#45205a}.header p{margin:2px 0;color:#756a7c}.total{font-size:20px;color:#5d2e7c;font-weight:900;text-align:center}.total small{display:block;font-size:7px;text-transform:uppercase}.filterbar{display:flex;gap:12px;flex-wrap:wrap;border:1px solid #e7daee;border-radius:7px;padding:5px 8px;margin-bottom:7px;background:#fdfafe;color:#65576e;font-size:7.5px}.visit-sheet{border:1px solid #d8c4e3;border-radius:9px;padding:8px;margin:0 0 7px;break-inside:avoid;page-break-inside:avoid}.visit-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border-bottom:2px solid #8e58aa;padding-bottom:5px;margin-bottom:6px}.visit-title-row>div:first-child{display:flex;align-items:center;gap:6px}.visit-number{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#6f368f;color:#fff;font-weight:900}.visit-title-row h2{font-size:12px;margin:0;color:#45205a}.visit-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.visit-tags span{padding:3px 5px;border-radius:10px;background:#efe2f5;color:#5d2e7c;font-size:6.5px;font-weight:800}.schedule{display:flex;align-items:center;gap:5px;flex-wrap:wrap;border-radius:6px;background:#f4ebf8;padding:5px 7px;margin-bottom:6px;color:#4e2c5f}.schedule strong{font-size:7px}.schedule small{margin-left:auto;font-weight:700;color:#8a3f52}.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 7px}.data-grid>div{border-bottom:1px solid #eee5f2;padding:3px 2px}.data-grid .wide{grid-column:1/-1}.data-grid label{display:block;text-transform:uppercase;font-size:5.8px;letter-spacing:.04em;color:#7b6c83;font-weight:800;margin-bottom:1px}.data-grid b,.data-grid p{font-size:7.7px;margin:0;line-height:1.3}.field-return{margin-top:7px;border:1.5px dashed #8e58aa;border-radius:8px;padding:7px;background:#fcf9fd}.field-return h3{font-size:7px;margin:0 0 6px;color:#5d2e7c}.new-visit-line{font-size:8px;margin:5px 0}.visit-schedule-reminder{font-size:7.5px;margin:6px 0 5px;padding:5px 7px;border-radius:6px;background:#f3e9f8;border-left:3px solid #7a4596;color:#4f2d61}.boxcheck{display:inline-block;width:9px;height:9px;border:1.2px solid #403447;vertical-align:-1px;margin-right:2px}.notes-line{font-size:8px;margin-top:6px}.notes-line>div{height:13px;border-bottom:1px solid #999;margin-top:2px}.footer{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #ddd0e5;padding-top:5px;margin-top:5px;color:#776c80;font-size:6.5px}@media print{.actions{display:none}.report{max-width:none}.visit-sheet{break-inside:avoid;page-break-inside:avoid}}
+    </style></head><body><div class="actions"><button class="secondary" onclick="window.close()">Fechar</button><button class="primary" onclick="window.print()">Imprimir / Salvar PDF</button></div><main class="report"><header class="header">${brandImage ? `<img src="${escapeAttr(brandImage)}" alt="SP Mulher Segura">` : '<div></div>'}<div><h1>Relatório Operacional — Visitas em Aberto</h1><p>Programa SP Mulher Segura — 3º BPM/M</p><p>Ficha de apoio às equipes responsáveis pelas visitas</p></div><div class="total">${visits.length}<small>visita${visits.length === 1 ? '' : 's'}</small></div></header><div class="filterbar"><span>${escapeHtml(searchLabel)}</span><span>${escapeHtml(ciaLabel)}</span><span>Gerado em: ${escapeHtml(generatedAt)}</span></div>${cards}<footer class="footer"><span>Documento operacional para apoio à realização das visitas.</span><span>Total: ${visits.length} visita${visits.length === 1 ? '' : 's'}.</span></footer></main></body></html>`;
+  }
+
+  async function loadOpenVisits() {
+    setSectionLoading('openVisits');
+    try {
+      state.visits = await server('getOpenVisits', { search: document.getElementById('visitSearch').value, cia: document.getElementById('visitCia').value });
+      document.getElementById('visitCount').textContent = state.visits.length;
+      renderOpenVisits();
+    } catch (error) {
+      showToast(error.message, 'error');
+      document.getElementById('openVisits').innerHTML = emptyHtml('Não foi possível carregar as visitas.');
+    }
+  }
+
+  function renderOpenVisits() {
+    const container = document.getElementById('openVisits');
+    if (!state.visits.length) {
+      container.innerHTML = emptyHtml('Não há visitas em aberto para os filtros selecionados.');
+      return;
+    }
+    container.innerHTML = state.visits.map((record, index) => {
+      const timing = getScheduleTiming(record.dataVisita);
+      const continued = Number(record.sequencia || 1) > 1 || record.origemAgendamento === 'NOVA VISITA APÓS ACOMPANHAMENTO';
+      const maxVisits = Number(state.bootstrap?.visitSchedule?.maxVisits) || 3;
+      const canScheduleNext = Number(record.sequencia || 1) < maxVisits;
+      const scheduleTime = formatTime(record.horaVisita);
+      const deadlineHtml = buildVisitDeadlineHtml(record);
+      return `
+      <article class="visit-card ${timing.className}">
+        <div class="visit-schedule-panel">
+          <div class="visit-schedule-main">
+            <span>VISITA AGENDADA</span>
+            <strong>${formatDate(record.dataVisita)}</strong>
+            <em>ÀS</em>
+            <b>${escapeHtml(scheduleTime)}</b>
+          </div>
+          <span class="schedule-state ${timing.className}">${escapeHtml(timing.label)}</span>
+        </div>
+        <div class="visit-badges"><span class="status-pill">${escapeHtml(record.tipoVisita)}</span><span class="sequence-badge small-badge">${escapeHtml(formatVisitSequence(record.sequencia))}</span>${continued ? '<span class="continued-badge">ACOMPANHAMENTO CONTINUADO</span>' : ''}</div>
+        <h3>${escapeHtml(record.nomeVitima)}</h3>
+        <p><strong>Endereço:</strong> ${escapeHtml(record.enderecoVitima || 'Não informado')}${record.bairro ? ' – ' + escapeHtml(record.bairro) : ''}</p>
+        <p><strong>Telefone:</strong> ${escapeHtml(record.telefoneAtualizado || record.telefoneOriginal || 'Não informado')}</p>
+        <p><strong>Natureza:</strong> ${escapeHtml(record.natureza || 'Não informada')} · ${escapeHtml(record.cia || '')}</p>
+        ${deadlineHtml}
+        <div class="visit-card-footer">
+          <span class="muted">${escapeHtml(record.visitId)}</span>
+          <div class="visit-card-actions">
+            <button class="button secondary small" data-visit-index="${index}" data-visit-action="REAGENDAR" type="button">Atualizar / Concluir</button>
+            ${canScheduleNext ? `<button class="button primary small" data-visit-index="${index}" data-visit-action="CONCLUIR_NOVA" type="button">Concluir + agendar ${formatVisitSequence(Number(record.sequencia || 1) + 1)}</button>` : '<span class="limit-badge">LIMITE DE 3 VISITAS ATINGIDO</span>'}
+          </div>
+        </div>
+      </article>`;
+    }).join('');
+    container.querySelectorAll('[data-visit-index]').forEach(button => button.addEventListener('click', () => openVisitModal(Number(button.dataset.visitIndex), button.dataset.visitAction || 'REAGENDAR')));
+  }
+
+  function openVisitModal(index, actionPreset = 'REAGENDAR') {
+    const record = state.visits[index];
+    document.getElementById('visitRecordId').value = record.visitId;
+    document.getElementById('visitOccurrenceId').value = record.occurrenceId || record.id;
+    document.getElementById('visitCurrentSequence').value = Number(record.sequencia) || 1;
+    document.getElementById('visitModalTitle').textContent = record.nomeVitima;
+    document.getElementById('visitAgendaDate').textContent = formatDate(record.dataVisita);
+    document.getElementById('visitAgendaTime').textContent = formatTime(record.horaVisita);
+    document.getElementById('visitSequenceBadge').textContent = formatVisitSequence(record.sequencia);
+    document.getElementById('visitModalSummary').innerHTML = [
+      ['Tipo da visita', record.tipoVisita], ['Status do acompanhamento', record.origemAgendamento === 'NOVA VISITA APÓS ACOMPANHAMENTO' ? 'NOVA VISITA AGENDADA APÓS ATENDIMENTO ANTERIOR' : 'VISITA EM ABERTO'],
+      ['Telefone', record.telefoneAtualizado || record.telefoneOriginal], ['Endereço', `${record.enderecoVitima || ''}${record.bairro ? ' – ' + record.bairro : ''}`],
+      ['Natureza', record.natureza], ['Histórico', record.breveHistorico, true]
+    ].map(item => detailHtml(item[0], item[1], item[2])).join('');
+    const maxVisits = Number(state.bootstrap?.visitSchedule?.maxVisits) || 3;
+    const currentSequence = Number(record.sequencia) || 1;
+    const nextOption = document.getElementById('visitActionNextOption');
+    const canScheduleNext = currentSequence < maxVisits;
+    nextOption.disabled = !canScheduleNext;
+    nextOption.hidden = !canScheduleNext;
+    nextOption.textContent = canScheduleNext
+      ? `MARCAR COMO REALIZADA E AGENDAR A ${formatVisitSequence(currentSequence + 1)}`
+      : 'LIMITE DE 3 VISITAS ATINGIDO';
+    document.getElementById('visitActionHelp').textContent = canScheduleNext
+      ? `Ao concluir, será possível agendar a ${formatVisitSequence(currentSequence + 1)}. O limite é de 3 visitas.`
+      : 'Esta é a 3ª visita. Ela poderá ser concluída, mas não será possível gerar uma 4ª visita.';
+    document.getElementById('visitAction').value = actionPreset === 'CONCLUIR_NOVA' && !canScheduleNext ? 'REAGENDAR' : actionPreset;
+    document.getElementById('visitType').value = record.tipoVisita || '';
+    document.getElementById('visitScheduledDate').value = record.dataVisita || '';
+    document.getElementById('visitScheduledTime').value = formatTimeForInput(record.horaVisita);
+    document.getElementById('visitNotes').value = record.observacoesVisita || '';
+    const now = new Date();
+    document.getElementById('visitRealizedDate').value = localDateInput(now);
+    document.getElementById('visitRealizedTime').value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('visitResult').value = record.resultadoVisita || '';
+    document.getElementById('visitFonarPreenchido').value = record.fonarPreenchido || '';
+    document.getElementById('visitBoeNumber').value = record.numeroBoeComplementar || '';
+    resetFonarUploadState(true);
+    document.getElementById('visitFonarFile').value = '';
+    document.getElementById('existingFonarFile').innerHTML = record.fonarArquivoUrl
+      ? `<a href="${escapeAttr(record.fonarArquivoUrl)}" target="_blank" rel="noopener noreferrer">Abrir FONAR anexado: ${escapeHtml(record.fonarArquivoNome || 'arquivo')}</a>`
+      : '<span class="muted">Nenhum FONAR anexado nesta visita.</span>';
+    document.getElementById('existingFonarFile').dataset.url = record.fonarArquivoUrl || '';
+    document.getElementById('existingFonarFile').dataset.fileId = record.fonarArquivoId || '';
+    document.getElementById('existingFonarFile').dataset.fileName = record.fonarArquivoNome || '';
+    document.getElementById('nextVisitSequenceBadge').textContent = formatVisitSequence(Math.min((Number(record.sequencia) || 1) + 1, maxVisits));
+    document.getElementById('nextVisitType').value = record.tipoVisita || '';
+    document.getElementById('nextVisitDate').value = '';
+    document.getElementById('nextVisitTime').value = '';
+    document.getElementById('nextVisitNotes').value = '';
+    toggleVisitActionFields();
+    openModal('visitModal');
+  }
+
+  function toggleVisitActionFields() {
+    const action = document.getElementById('visitAction').value;
+    const realized = action === 'CONCLUIR' || action === 'CONCLUIR_NOVA';
+    const wantsNext = action === 'CONCLUIR_NOVA';
+
+    document.querySelectorAll('.realized-field').forEach(field => field.classList.toggle('hidden', !realized));
+    ['visitRealizedDate', 'visitRealizedTime', 'visitResult', 'visitFonarPreenchido', 'visitBoeNumber'].forEach(id => {
+      const input = document.getElementById(id);
+      input.required = realized;
+      input.disabled = !realized;
+    });
+
+    document.getElementById('visitType').required = true;
+    ['visitScheduledDate', 'visitScheduledTime'].forEach(id => {
+      const input = document.getElementById(id);
+      input.required = action === 'REAGENDAR';
+      input.disabled = action !== 'REAGENDAR';
+    });
+
+    document.getElementById('continuityPanel').classList.toggle('hidden', !wantsNext);
+    ['nextVisitType', 'nextVisitDate', 'nextVisitTime'].forEach(id => {
+      const input = document.getElementById(id);
+      input.required = wantsNext;
+      input.disabled = !wantsNext;
+    });
+    document.getElementById('nextVisitNotes').disabled = !wantsNext;
+    toggleVisitExtraFields();
+    updateSecondVisitDeadline();
+  }
+
+  function toggleVisitExtraFields() {
+    const realized = document.getElementById('visitAction').value !== 'REAGENDAR';
+    const fonarYes = realized && document.getElementById('visitFonarPreenchido').value === 'SIM';
+    const fonarField = document.getElementById('visitFonarUploadField');
+    const fonarInput = document.getElementById('visitFonarFile');
+    fonarField.classList.toggle('hidden', !fonarYes);
+    fonarInput.disabled = !fonarYes || state.fonarUpload.inProgress;
+    // A validação é feita pelo link retornado pelo uploader; não pelo input local.
+    fonarInput.required = false;
+    if (!fonarYes && state.fonarUpload.inProgress) {
+      resetFonarUploadState(true);
+      setBusy(false);
+    }
+
+    const boeField = document.getElementById('visitBoeNumberField');
+    const boeInput = document.getElementById('visitBoeNumber');
+    boeField.classList.toggle('hidden', !realized);
+    boeInput.disabled = !realized;
+    boeInput.required = realized;
+    boeInput.setCustomValidity(realized && !boeInput.value.trim()
+      ? 'Informe obrigatoriamente o número do BO-e de visita complementar para concluir a visita.'
+      : '');
+  }
+
+  function buildVisitDeadlineHtml(record) {
+    if (Number(record.sequencia) !== 2 || !record.secondVisitDeadline) return '';
+    const days = Number(record.secondVisitDaysRemaining);
+    const statusClass = days < 0 ? 'deadline-overdue' : (days <= 3 ? 'deadline-urgent' : 'deadline-ok');
+    const text = days < 0
+      ? `Prazo da 2ª visita vencido há ${Math.abs(days)} dia${Math.abs(days) === 1 ? '' : 's'}`
+      : (days === 0 ? 'Prazo da 2ª visita vence hoje' : `Faltam ${days} dia${days === 1 ? '' : 's'} para o prazo da 2ª visita`);
+    return `<div class="visit-deadline ${statusClass}"><strong>${escapeHtml(text)}</strong><span>Data-limite: ${escapeHtml(formatDate(record.secondVisitDeadline))} · referência: ${escapeHtml(formatDate(record.secondVisitReferenceDate))}</span></div>`;
+  }
+
+  function updateSecondVisitDeadline() {
+    const action = document.getElementById('visitAction').value;
+    const currentSequence = Number(document.getElementById('visitCurrentSequence').value) || 1;
+    const notice = document.getElementById('secondVisitDeadlineNotice');
+    const nextDate = document.getElementById('nextVisitDate');
+    if (action !== 'CONCLUIR_NOVA' || currentSequence !== 1) {
+      notice.classList.add('hidden');
+      nextDate.removeAttribute('max');
+      nextDate.removeAttribute('min');
+      nextDate.setCustomValidity('');
+      return;
+    }
+    const realizedDate = document.getElementById('visitRealizedDate').value;
+    if (!realizedDate) {
+      notice.classList.remove('hidden');
+      notice.className = 'deadline-reminder warning';
+      notice.innerHTML = '<strong>Prazo da 2ª visita</strong><span>Informe a data de realização da 1ª visita para calcular o limite de 20 dias.</span>';
+      return;
+    }
+    const maxDate = addDaysIso(realizedDate, Number(state.bootstrap?.visitSchedule?.secondVisitMaxDays) || 20);
+    nextDate.min = realizedDate;
+    nextDate.max = maxDate;
+    notice.classList.remove('hidden');
+    notice.className = 'deadline-reminder';
+    notice.innerHTML = `<strong>2ª visita: prazo máximo até ${escapeHtml(formatDate(maxDate))}</strong><span>O agendamento deve ocorrer em até ${Number(state.bootstrap?.visitSchedule?.secondVisitMaxDays) || 20} dias após a realização da 1ª visita.</span>`;
+    validateSecondVisitDeadlineInput();
+  }
+
+  function validateSecondVisitDeadlineInput() {
+    const input = document.getElementById('nextVisitDate');
+    if (!input || !input.value || document.getElementById('visitAction').value !== 'CONCLUIR_NOVA') return true;
+    const currentSequence = Number(document.getElementById('visitCurrentSequence').value) || 1;
+    if (currentSequence !== 1) {
+      input.setCustomValidity('');
+      return true;
+    }
+    const realized = document.getElementById('visitRealizedDate').value;
+    const maxDate = realized ? addDaysIso(realized, Number(state.bootstrap?.visitSchedule?.secondVisitMaxDays) || 20) : '';
+    let message = '';
+    if (realized && input.value < realized) message = 'A 2ª visita não pode ser agendada antes da realização da 1ª visita.';
+    if (!message && maxDate && input.value > maxDate) message = `A 2ª visita deve ocorrer até ${formatDate(maxDate)}.`;
+    input.setCustomValidity(message);
+    if (message) input.reportValidity();
+    return !message;
+  }
+
+  function addDaysIso(isoDate, days) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDate || ''));
+    if (!match) return '';
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0);
+    date.setDate(date.getDate() + Number(days || 0));
+    return localDateInput(date);
+  }
+
+  function validateVisitTimeInput(inputId, label) {
+    const input = document.getElementById(inputId);
+    if (!input || !input.value) return true;
+    const schedule = state.bootstrap?.visitSchedule || { minTime: '13:00', maxTime: '19:00' };
+    const valid = input.value >= schedule.minTime && input.value <= schedule.maxTime;
+    input.setCustomValidity(valid ? '' : `${label} deve estar entre 13h00 e 19h00.`);
+    if (!valid) {
+      input.reportValidity();
+      return false;
+    }
+    return true;
+  }
+
+  function makeFonarNonce() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    return 'fonar-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  }
+
+  function validateFonarLocalFile(file) {
+    if (!file) throw new Error('Selecione o arquivo do FONAR para anexar.');
+    const maxBytes = 10 * 1024 * 1024;
+    if (Number(file.size || 0) <= 0) throw new Error('O arquivo FONAR selecionado está vazio.');
+    if (Number(file.size || 0) > maxBytes) throw new Error('O arquivo FONAR deve ter no máximo 10 MB.');
+    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+    const extension = String(file.name || '').split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(extension)) {
+      throw new Error('Formato não permitido para o FONAR. Use PDF, JPG, PNG, DOC ou DOCX.');
+    }
+  }
+
+  function resetFonarUploadState(closePopup) {
+    const current = state.fonarUpload || {};
+    if (current.pollTimer) window.clearInterval(current.pollTimer);
+    if (closePopup && current.popup && !current.popup.closed) {
+      try { current.popup.close(); } catch (error) {}
+    }
+    state.fonarUpload = { inProgress: false, nonce: '', file: null, popup: null, pollTimer: null };
+    const input = document.getElementById('visitFonarFile');
+    if (input) input.disabled = false;
+  }
+
+  function renderCurrentFonarLink() {
+    const existing = document.getElementById('existingFonarFile');
+    if (!existing) return;
+    const url = String(existing.dataset.url || '');
+    const name = String(existing.dataset.fileName || 'arquivo');
+    existing.innerHTML = url
+      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">Abrir FONAR anexado: ${escapeHtml(name)}</a>`
+      : '<span class="muted">Nenhum FONAR anexado nesta visita.</span>';
+  }
+
+  function finishFonarUploadError(message, clearSelection) {
+    resetFonarUploadState(true);
+    const input = document.getElementById('visitFonarFile');
+    if (clearSelection && input) input.value = '';
+    renderCurrentFonarLink();
+    setBusy(false);
+    toggleVisitExtraFields();
+    if (message) showToast(message, 'error');
+  }
+
+  async function beginFonarUserDriveUpload(event) {
+    const input = event.currentTarget;
+    const file = input.files && input.files[0];
+    if (!file) return;
+
+    try {
+      validateFonarLocalFile(file);
+    } catch (error) {
+      input.value = '';
+      showToast(error.message, 'error');
+      return;
+    }
+
+    input.disabled = true;
+    document.getElementById('existingFonarFile').innerHTML = '<span class="muted">Enviando FONAR para o seu Google Drive...</span>';
+    setBusy(true, 'Enviando FONAR ao Google Drive...');
+    try {
+      const base64 = await new Promise((ok, falha) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1]); rd.onerror = falha; rd.readAsDataURL(file); });
+      const data = await new Promise((ok, falha) => google.script.run.withSuccessHandler(ok).withFailureHandler(e => falha(new Error(e?.message || String(e))))
+        .uploadFonar(file.name, file.type, base64, document.getElementById('visitOccurrenceId').value));
+      const existing = document.getElementById('existingFonarFile');
+      existing.dataset.url = data.url;
+      existing.dataset.fileId = String(data.fileId || '');
+      existing.dataset.fileName = String(data.fileName || 'FONAR');
+      existing.innerHTML = `<a href="${escapeAttr(data.url)}" target="_blank" rel="noopener noreferrer">Abrir FONAR anexado: ${escapeHtml(existing.dataset.fileName)}</a><br><small>Arquivo salvo no Google Drive da conta que realizou o anexo.</small>`;
+      input.value = '';
+      input.disabled = false;
+      setBusy(false);
+      toggleVisitExtraFields();
+      showToast('FONAR enviado ao seu Google Drive e link vinculado à visita.', 'success');
+    } catch (error) {
+      input.value = '';
+      input.disabled = false;
+      setBusy(false);
+      document.getElementById('existingFonarFile').innerHTML = '';
+      showToast(error.message || 'Não foi possível enviar o FONAR.', 'error');
+    }
+  }
+
+  function handleFonarUploaderMessage(event) {
+    const data = event && event.data;
+    if (!data || typeof data !== 'object' || !String(data.type || '').startsWith('FONAR_UPLOADER_')) return;
+    const current = state.fonarUpload;
+    if (!current || !current.inProgress || !current.nonce || String(data.nonce || '') !== current.nonce) return;
+
+    if (data.type === 'FONAR_UPLOADER_READY') {
+      try {
+        current.popup.postMessage({
+          type: 'FONAR_UPLOAD_FILE',
+          nonce: current.nonce,
+          file: current.file,
+          occurrenceId: document.getElementById('visitOccurrenceId').value,
+          visitId: document.getElementById('visitRecordId').value,
+          sequencia: document.getElementById('visitCurrentSequence').value
+        }, '*');
+      } catch (error) {
+        finishFonarUploadError('Não foi possível enviar o arquivo para a janela do Google Drive. Tente novamente.', true);
+      }
+      return;
+    }
+
+    if (data.type === 'FONAR_UPLOADER_SUCCESS') {
+      const url = String(data.url || '').trim();
+      if (!/^https:\/\/drive\.google\.com\//i.test(url)) {
+        finishFonarUploadError('O Google Drive não retornou um link válido para o FONAR.', true);
+        return;
+      }
+      const existing = document.getElementById('existingFonarFile');
+      existing.dataset.url = url;
+      existing.dataset.fileId = String(data.fileId || '');
+      existing.dataset.fileName = String(data.fileName || 'FONAR');
+      existing.innerHTML = `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">Abrir FONAR anexado: ${escapeHtml(existing.dataset.fileName)}</a><br><small>Arquivo salvo no Google Drive da conta que realizou o anexo.</small>`;
+      resetFonarUploadState(false);
+      const input = document.getElementById('visitFonarFile');
+      if (input) input.value = '';
+      setBusy(false);
+      toggleVisitExtraFields();
+      showToast('FONAR enviado ao seu Google Drive e link vinculado à visita.', 'success');
+      return;
+    }
+
+    if (data.type === 'FONAR_UPLOADER_CANCEL') {
+      finishFonarUploadError('Envio do FONAR cancelado.', true);
+      return;
+    }
+
+    if (data.type === 'FONAR_UPLOADER_ERROR') {
+      finishFonarUploadError(String(data.message || 'Não foi possível enviar o FONAR ao Google Drive.'), true);
+    }
+  }
+
+  async function submitVisitForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const action = document.getElementById('visitAction').value;
+    const currentSequence = Number(document.getElementById('visitCurrentSequence').value) || 1;
+    const maxVisits = Number(state.bootstrap?.visitSchedule?.maxVisits) || 3;
+    const realized = action === 'CONCLUIR' || action === 'CONCLUIR_NOVA';
+
+    if (action === 'CONCLUIR_NOVA' && currentSequence >= maxVisits) {
+      showToast('Limite atingido: não é permitido gerar uma 4ª visita.', 'error');
+      return;
+    }
+    if (action === 'REAGENDAR' && !validateVisitTimeInput('visitScheduledTime', 'O horário agendado')) return;
+    if (action === 'CONCLUIR_NOVA' && !validateVisitTimeInput('nextVisitTime', 'O horário da próxima visita')) return;
+    if (action === 'CONCLUIR_NOVA' && !validateSecondVisitDeadlineInput()) return;
+
+    const fonarPreenchido = document.getElementById('visitFonarPreenchido').value;
+    const existingFonar = document.getElementById('existingFonarFile');
+    const fonarFile = document.getElementById('visitFonarFile');
+    if (realized && !fonarPreenchido) {
+      showToast('Informe se o formulário FONAR foi preenchido.', 'error');
+      document.getElementById('visitFonarPreenchido').focus();
+      return;
+    }
+    if (realized && fonarPreenchido === 'SIM' && state.fonarUpload.inProgress) {
+      showToast('Aguarde o término do envio do FONAR para o Google Drive.', 'error');
+      return;
+    }
+    if (realized && fonarPreenchido === 'SIM' && !existingFonar.dataset.url) {
+      showToast('Anexe o formulário FONAR antes de concluir a visita.', 'error');
+      fonarFile.focus();
+      return;
+    }
+    if (realized) {
+      const boeNumberInput = document.getElementById('visitBoeNumber');
+      if (!boeNumberInput.value.trim()) {
+        boeNumberInput.setCustomValidity('Informe obrigatoriamente o número do BO-e de visita complementar para concluir a visita.');
+        boeNumberInput.reportValidity();
+        showToast('Não é possível concluir: informe o Nº do BO-e de visita complementar.', 'error');
+        boeNumberInput.focus();
+        return;
+      }
+      boeNumberInput.setCustomValidity('');
+    }
+
+    const confirmationMessage = action === 'REAGENDAR'
+      ? 'Confirma a atualização deste acompanhamento?'
+      : (action === 'CONCLUIR_NOVA'
+        ? 'Confirma a conclusão desta visita e o agendamento da próxima?'
+        : 'Confirma a conclusão desta visita?');
+    if (!askConfirmation(confirmationMessage)) return;
+
+    const payload = {
+      visitId: document.getElementById('visitRecordId').value,
+      occurrenceId: document.getElementById('visitOccurrenceId').value,
+      statusVisita: action === 'REAGENDAR' ? 'ABERTA' : 'REALIZADA',
+      tipoVisita: document.getElementById('visitType').value,
+      dataVisita: document.getElementById('visitScheduledDate').value,
+      horaVisita: document.getElementById('visitScheduledTime').value,
+      dataRealizacao: document.getElementById('visitRealizedDate').value,
+      horaRealizacao: document.getElementById('visitRealizedTime').value,
+      resultadoVisita: document.getElementById('visitResult').value,
+      observacoesVisita: document.getElementById('visitNotes').value,
+      fonarPreenchido: realized ? fonarPreenchido : '',
+      fonarArquivoNome: fonarPreenchido === 'SIM' ? (existingFonar.dataset.fileName || '') : '',
+      fonarArquivoUrl: fonarPreenchido === 'SIM' ? (existingFonar.dataset.url || '') : '',
+      fonarArquivoId: fonarPreenchido === 'SIM' ? (existingFonar.dataset.fileId || '') : '',
+      boeComplementarRealizado: realized ? 'SIM' : '',
+      numeroBoeComplementar: realized ? document.getElementById('visitBoeNumber').value.trim() : '',
+      novaVisita: action === 'CONCLUIR_NOVA' ? 'SIM' : 'NÃO',
+      proximoTipoVisita: document.getElementById('nextVisitType').value,
+      proximaDataVisita: document.getElementById('nextVisitDate').value,
+      proximaHoraVisita: document.getElementById('nextVisitTime').value,
+      observacoesProximaVisita: document.getElementById('nextVisitNotes').value
+    };
+
+    setBusy(true, 'Atualizando acompanhamento...');
+    try {
+      const response = await server('salvarAcompanhamento', payload);
+      showToast(response.message, 'success');
+      closeModal('visitModal');
+      await loadOpenVisits();
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function getScheduleTiming(dateValue) {
+    if (!dateValue) return { label: 'SEM DATA', className: 'schedule-missing' };
+    const today = localDateInput(new Date());
+    if (dateValue < today) return { label: 'ATRASADA', className: 'schedule-overdue' };
+    if (dateValue === today) return { label: 'HOJE', className: 'schedule-today' };
+    return { label: 'AGENDADA', className: 'schedule-upcoming' };
+  }
+
+  function formatVisitSequence(value) {
+    const number = Number(value) || 1;
+    return `${number}ª VISITA`;
+  }
+
+  function localDateInput(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  async function loadDashboard() {
+    setBusy(true, 'Atualizando indicadores...');
+    try {
+      const selectedYear = Number(document.getElementById('dashboardYear').value);
+      const selectedMonth = Number(document.getElementById('dashboardMonth').value) || 0;
+      const data = await server('getDashboardData', selectedYear, selectedMonth);
+      state.dashboardData = data;
+      renderDashboard(data);
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function renderDashboard(data) {
+    const periodLabel = data.periodLabel || String(data.year || '');
+    document.getElementById('dashboardUpdated').textContent = 'Período: ' + periodLabel + ' · Atualizado em ' + data.generatedAt;
+    const cards = [
+      [Number(data.month) ? 'Registros no mês' : 'Registros no ano', data.kpis.registros, 'Ocorrências cadastradas no período'], ['Visitas realizadas', data.kpis.visitasRealizadas, `${data.kpis.visitasAbertas} ainda em aberto`],
+      ['Ligações realizadas', data.kpis.ligacoesRealizadas, 'Contatos telefônicos efetuados'], ['Aceitaram ligação', data.kpis.aceitouLigacao, 'Vítimas que aceitaram o contato'],
+      ['Não aceitaram ligação', data.kpis.naoAceitouLigacao, 'Recusa ou não aceitação'], ['Medidas protetivas', data.kpis.medidasProtetivas, 'Ocorrências com medida'],
+      ['Autores presos', data.kpis.autoresPresos, 'Autor preso no registro'], ['Reincidências', data.kpis.reincidencias, 'Casos informados como reincidentes'],
+      ['Visitas agendadas', data.kpis.visitasAgendadas, 'Abertas e realizadas'], ['Com arquivos', data.kpis.comArquivos, 'Registros com links vinculados'],
+      ['FONAR preenchidos', data.kpis.fonarPreenchidos || 0, 'Visitas realizadas com FONAR'], ['BO-e complementares', data.kpis.boeComplementares || 0, 'BO-e registrados nas visitas']
+    ];
+    document.getElementById('kpiGrid').innerHTML = cards.map(card => `<div class="card kpi-card"><div class="kpi-label">${escapeHtml(card[0])}</div><div class="kpi-value">${card[1]}</div><div class="kpi-detail">${escapeHtml(card[2])}</div></div>`).join('');
+    renderMonthlyChart(data.monthly);
+    renderBars('visitTypeChart', data.visitTypes);
+    renderBars('ciaChart', data.ciaTotals);
+    renderBars('resultChart', data.results, 8);
+    renderBars('natureChart', data.natures, 10);
+    renderCiaMonthTable(data.byCiaMonth, Number(data.month) || 0);
+  }
+
+  function renderMonthlyChart(monthly) {
+    monthly = monthly || [];
+    const max = Math.max(1, ...monthly.flatMap(item => [item.registros, item.ligacoes, item.visitas]));
+    const chart = document.getElementById('monthlyChart');
+    chart.style.gridTemplateColumns = monthly.length === 1 ? 'minmax(120px, 220px)' : 'repeat(12,minmax(52px,1fr))';
+    chart.innerHTML = `
+      <div class="chart-legend" style="grid-column:1/-1"><span><i class="legend-dot" style="background:var(--lilac-800)"></i>Registros</span><span><i class="legend-dot" style="background:var(--lilac-500)"></i>Ligações</span><span><i class="legend-dot" style="background:#d292b9"></i>Visitas</span></div>
+      ${monthly.map(item => `<div class="month-cluster" title="${item.label}: ${item.registros} registros, ${item.ligacoes} ligações, ${item.visitas} visitas"><div class="month-bars"><span class="month-bar reg" style="height:${Math.max(1, item.registros / max * 100)}%"></span><span class="month-bar call" style="height:${Math.max(1, item.ligacoes / max * 100)}%"></span><span class="month-bar visit" style="height:${Math.max(1, item.visitas / max * 100)}%"></span></div><div class="month-name">${escapeHtml(item.label)}</div></div>`).join('')}`;
+  }
+
+  function renderBars(containerId, items, limit = 12) {
+    const container = document.getElementById(containerId);
+    const data = (items || []).slice(0, limit);
+    if (!data.length || data.every(item => !item.value)) {
+      container.innerHTML = emptyHtml('Sem dados para o período.');
+      return;
+    }
+    const max = Math.max(1, ...data.map(item => item.value));
+    container.innerHTML = data.map(item => `<div><div class="bar-row-head"><span>${escapeHtml(item.label)}</span><strong>${item.value}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${item.value / max * 100}%"></div></div></div>`).join('');
+  }
+
+  function renderCiaMonthTable(items, selectedMonth = 0) {
+    const monthOptions = state.bootstrap.months.slice(1);
+    const visibleMonths = selectedMonth
+      ? [{ index: selectedMonth - 1, label: monthOptions[selectedMonth - 1]?.label.substring(0, 3) || String(selectedMonth) }]
+      : monthOptions.map((month, index) => ({ index, label: month.label.substring(0, 3) }));
+    const rows = (items || []).map(item => {
+      const cells = visibleMonths.map(month => `<td>${Number(item.months?.[month.index]) || 0}</td>`).join('');
+      const total = selectedMonth ? (Number(item.months?.[selectedMonth - 1]) || 0) : Number(item.total || 0);
+      return `<tr><td><strong>${escapeHtml(item.cia)}</strong></td>${cells}<td><strong>${total}</strong></td></tr>`;
+    }).join('');
+    const html = `<table><thead><tr><th>CIA</th>${visibleMonths.map(month => `<th>${escapeHtml(month.label)}</th>`).join('')}<th>Total</th></tr></thead><tbody>${rows}</tbody></table>`;
+    document.getElementById('ciaMonthTable').innerHTML = html;
+  }
+
+  async function printDashboardReport() {
+    let data = state.dashboardData;
+    const selectedYear = Number(document.getElementById('dashboardYear').value);
+    const selectedMonth = Number(document.getElementById('dashboardMonth').value) || 0;
+    if (!data || Number(data.year) !== selectedYear || Number(data.month || 0) !== selectedMonth) {
+      setBusy(true, 'Preparando relatório dos dados numéricos...');
+      try {
+        data = await server('getDashboardData', selectedYear, selectedMonth);
+        state.dashboardData = data;
+        renderDashboard(data);
+      } catch (error) {
+        showToast(error.message, 'error');
+        setBusy(false);
+        return;
+      }
+      setBusy(false);
+    }
+
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+      showToast('O navegador bloqueou a nova aba. Permita pop-ups para imprimir o relatório.', 'error');
+      return;
+    }
+    const brandImage = document.querySelector('.brand-hero-image')?.src || document.querySelector('.brand-mark-photo')?.src || '';
+    reportWindow.document.open();
+    reportWindow.document.write(buildDashboardReportHtml(data, brandImage));
+    reportWindow.document.close();
+    setTimeout(() => { try { reportWindow.focus(); reportWindow.print(); } catch (error) {} }, 600);
+  }
+
+  function buildDashboardReportHtml(data, brandImage) {
+    const k = data.kpis || {};
+    const monthlyRows = (data.monthly || []).map(item => `<tr><td>${escapeHtml(item.label)}</td><td>${Number(item.registros)||0}</td><td>${Number(item.ligacoes)||0}</td><td>${Number(item.visitas)||0}</td></tr>`).join('');
+    const seriesRows = (title, items) => `<section class="box"><h3>${escapeHtml(title)}</h3><table><tbody>${(items || []).map(item => `<tr><td>${escapeHtml(item.label)}</td><td class="num">${Number(item.value)||0}</td></tr>`).join('') || '<tr><td>Sem dados</td><td class="num">0</td></tr>'}</tbody></table></section>`;
+    const kpis = [
+      ['Ocorrências cadastradas', k.registros], ['Ligações realizadas', k.ligacoesRealizadas], ['Visitas agendadas', k.visitasAgendadas], ['Visitas realizadas', k.visitasRealizadas],
+      ['Visitas em aberto', k.visitasAbertas], ['Aceitaram contato', k.aceitouLigacao], ['Não aceitaram contato', k.naoAceitouLigacao], ['Medidas protetivas', k.medidasProtetivas],
+      ['Autores presos', k.autoresPresos], ['Reincidências', k.reincidencias], ['FONAR preenchidos', k.fonarPreenchidos || 0], ['BO-e complementares', k.boeComplementares || 0]
+    ];
+    return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Dados Numéricos - Mulher Segura - ${escapeHtml(data.periodLabel || data.year)}</title><style>
+      @page{size:A4 portrait;margin:9mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#30263a;margin:0;font-size:9px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px}.actions button{border:0;border-radius:7px;padding:8px 12px;font-weight:700}.primary{background:#6f368f;color:white}.secondary{background:#eee6f2;color:#5d2e7c}.report{max-width:192mm;margin:auto}.header{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid #d9bce9;background:#f8f2fb;border-radius:10px}.header img{width:52px;height:58px;object-fit:cover;border-radius:8px}.header h1{font-size:17px;margin:0;color:#45205a}.header p{margin:2px 0;color:#776c80}.year{font-size:20px;color:#5d2e7c;font-weight:900}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:8px 0}.kpi{border:1px solid #e4d5ec;border-radius:7px;padding:6px}.kpi span{display:block;font-size:6px;text-transform:uppercase;color:#776c80;font-weight:800}.kpi strong{font-size:15px;color:#5d2e7c}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.box{border:1px solid #e4d5ec;border-radius:8px;padding:7px;break-inside:avoid}.box.wide{grid-column:1/-1}.box h3{margin:0 0 5px;color:#5d2e7c;font-size:10px}table{width:100%;border-collapse:collapse}td,th{padding:3px 4px;border-bottom:1px solid #eee6f2;text-align:left;font-size:7.5px}th{background:#f5eef9;color:#5d2e7c}.num{text-align:right;font-weight:800}.footer{display:flex;justify-content:space-between;border-top:1px solid #ddd0e5;margin-top:8px;padding-top:5px;color:#776c80;font-size:7px}@media print{.actions{display:none}.report{max-width:none}}
+    </style></head><body><div class="actions"><button class="secondary" onclick="window.close()">Fechar</button><button class="primary" onclick="window.print()">Imprimir / Salvar PDF</button></div><main class="report"><header class="header">${brandImage ? `<img src="${escapeAttr(brandImage)}" alt="SP Mulher Segura">` : '<div></div>'}<div><h1>Relatório de Dados Numéricos</h1><p>Programa SP Mulher Segura — 3º BPM/M</p><p>Indicadores consolidados do sistema</p></div><div class="year">${escapeHtml(data.periodLabel || data.year)}</div></header><section class="kpis">${kpis.map(item => `<div class="kpi"><span>${escapeHtml(item[0])}</span><strong>${Number(item[1])||0}</strong></div>`).join('')}</section><div class="grid"><section class="box wide"><h3>Resumo mensal</h3><table><thead><tr><th>Mês</th><th>Registros</th><th>Ligações</th><th>Visitas realizadas</th></tr></thead><tbody>${monthlyRows}</tbody></table></section>${seriesRows('Quantidade por CIA', data.ciaTotals)}${seriesRows('Tipos de visita realizados', data.visitTypes)}${seriesRows('Naturezas das ocorrências', data.natures)}${seriesRows('Resultados dos atendimentos', data.results)}</div><footer class="footer"><span>Período de referência: ${escapeHtml(data.periodLabel || data.year)}</span><span>Gerado em ${escapeHtml(data.generatedAt || '')}</span></footer></main></body></html>`;
+  }
+
+  function renderMapBoundaryStatus(status) {
+    const box = document.getElementById('mapBoundaryStatus');
+    const guidance = document.getElementById('mapImportGuidance');
+    const downloadButton = document.getElementById('mapBoundaryAutoButton');
+    const importButton = document.getElementById('mapBoundaryChooseButton');
+    if (!box) return;
+
+    const ready = Boolean(status && status.ready);
+    box.classList.toggle('ready', ready);
+    box.classList.toggle('pending', !ready);
+    box.classList.remove('checking');
+
+    if (ready) {
+      const counts = status.counts || {};
+      box.innerHTML = `<strong>✓ Limites carregados automaticamente</strong><span>${escapeHtml(String(status.total || 0))} elemento(s) salvos na aba ${escapeHtml(status.storage || 'MAPA LIMITES')}. 1ª Cia: ${Number(counts['1ª CIA'] || 0)}, 2ª Cia: ${Number(counts['2ª CIA'] || 0)}, 3ª Cia: ${Number(counts['3ª CIA'] || 0)}${status.updatedAt ? `. Atualizado em ${escapeHtml(status.updatedAt)}.` : '.'}</span>`;
+      if (guidance) guidance.classList.add('hidden');
+      if (downloadButton) downloadButton.classList.add('hidden');
+      if (importButton) {
+        importButton.classList.remove('hidden');
+        importButton.textContent = 'Atualizar limites (opcional)';
+        importButton.title = 'Use somente se o mapa territorial for alterado.';
+      }
+    } else {
+      const missing = Array.isArray(status?.missingCompanies) && status.missingCompanies.length
+        ? ` Faltam: ${status.missingCompanies.join(', ')}.`
+        : '';
+      box.innerHTML = `<strong>Importação única necessária</strong><span>Os limites ainda não estão salvos.${escapeHtml(missing)} Depois da primeira importação completa, o carregamento será automático.</span>`;
+      if (guidance) guidance.classList.remove('hidden');
+      if (downloadButton) downloadButton.classList.remove('hidden');
+      if (importButton) {
+        importButton.classList.remove('hidden');
+        importButton.textContent = 'Importar KML/KMZ completo — uma única vez';
+        importButton.title = '';
+      }
+    }
+  }
+
+  async function loadMapStatistics() {
+    const filters = getMapFilters();
+    if (!filters) return;
+    setBusy(true, 'Gerando mapas estatísticos...');
+    try {
+      state.mapData = await server('getMapStatisticalData', filters);
+      state.mapBoundaryStatus = state.mapData.boundaryStatus || state.mapBoundaryStatus;
+      renderMapBoundaryStatus(state.mapBoundaryStatus);
+      renderMapStatistics(state.mapData);
+    } catch (error) {
+      showToast(error.message, 'error');
+      document.getElementById('mapSummary').innerHTML = '';
+      showMapWarning(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function getMapFilters() {
+    const dateFrom = document.getElementById('mapDateFrom').value;
+    const dateTo = document.getElementById('mapDateTo').value;
+    if (!dateFrom || !dateTo) {
+      showToast('Informe a data inicial e a data final do mapa.', 'error');
+      return null;
+    }
+    if (dateFrom > dateTo) {
+      showToast('A data inicial não pode ser posterior à data final.', 'error');
+      return null;
+    }
+    return {
+      dateFrom,
+      dateTo,
+      cia: document.getElementById('mapCia').value
+    };
+  }
+
+  async function processPendingMapAddresses() {
+    const filters = getMapFilters();
+    if (!filters) return;
+    setBusy(true, 'Processando endereços pendentes...');
+    try {
+      const response = await server('geocodificarPendentesMapa', filters);
+      showToast(response.message, 'success');
+      await loadMapStatistics();
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function downloadFull12BPMMKml() {
+    const url = state.bootstrap?.mapConfig?.sourceKmlUrl || '';
+    if (!url) {
+      showToast('O endereço de exportação do mapa não está configurado.', 'error');
+      return;
+    }
+    triggerFullMapDownload(url);
+    const message = 'O download do KML completo foi aberto em uma nova guia. Depois, volte ao sistema e clique em “Importar KML/KMZ completo”. Se o arquivo baixado tiver somente um NetworkLink, exporte novamente no My Maps desmarcando a opção de link de rede.';
+    showToast(message, 'success');
+    showMapWarning(message);
+  }
+
+  async function importMapBoundaryFile(event) {
+    const input = event && event.target ? event.target : document.getElementById('mapBoundaryFile');
+    const file = input && input.files && input.files[0];
+    if (!file) return;
+
+    setBusy(true, 'Lendo os limites do mapa CPC...');
+    try {
+      let kmlText = await readKmlOrKmzFile(file);
+      const networkLink = extractNetworkLinkFromKml(kmlText);
+
+      if (networkLink && !hasKmlBoundaryGeometry(kmlText)) {
+        throw new Error(
+          'O arquivo selecionado é somente um NetworkLink e não contém os polígonos. ' +
+          'No Google My Maps, abra o menu do mapa, escolha “Exportar para KML/KMZ”, ' +
+          'selecione a camada do 3º BPM/M e desmarque a opção de manter os dados atualizados por link de rede/NetworkLink. ' +
+          'Depois importe o novo arquivo KML ou KMZ completo.'
+        );
+      }
+
+      const boundaries = parseMapBoundariesFromKml(kmlText);
+      const response = await server('salvarLimitesMapaImportados', {
+        fileName: file.name,
+        boundaries
+      });
+      state.mapBoundaryStatus = response.boundaryStatus || state.mapBoundaryStatus;
+      renderMapBoundaryStatus(state.mapBoundaryStatus);
+      hideMapWarning();
+      showToast(response.message, 'success');
+      await loadMapStatistics();
+    } catch (error) {
+      const message = error.message || String(error);
+      showToast(message, 'error');
+      showMapWarning(message);
+    } finally {
+      input.value = '';
+      setBusy(false);
+    }
+  }
+
+  async function readKmlOrKmzFile(file) {
+    return readKmlOrKmzBuffer(await file.arrayBuffer(), file.name || 'mapa.kml');
+  }
+
+  async function readKmlOrKmzBuffer(buffer, fileName) {
+    const bytes = new Uint8Array(buffer);
+    const isZip = /\.kmz$/i.test(String(fileName || '')) || (bytes.length > 1 && bytes[0] === 80 && bytes[1] === 75);
+    if (!isZip) return new TextDecoder('utf-8').decode(bytes);
+
+    if (typeof JSZip === 'undefined') {
+      throw new Error('Não foi possível abrir o KMZ porque a biblioteca de compactação não carregou. Atualize a página e tente novamente.');
+    }
+    const zip = await JSZip.loadAsync(buffer);
+    const entries = Object.values(zip.files).filter(entry => !entry.dir && /\.kml$/i.test(entry.name));
+    if (!entries.length) throw new Error('O arquivo KMZ não contém um arquivo KML válido.');
+    const preferred = entries.find(entry => /(^|\/)doc\.kml$/i.test(entry.name)) || entries[0];
+    return preferred.async('string');
+  }
+
+  function parseKmlDocument(kmlText) {
+    const xml = new DOMParser().parseFromString(String(kmlText || ''), 'application/xml');
+    const parserError = xml.getElementsByTagName('parsererror')[0];
+    if (parserError) throw new Error('O arquivo selecionado não é um KML válido.');
+    return xml;
+  }
+
+  function extractNetworkLinkFromKml(kmlText) {
+    let xml;
+    try { xml = parseKmlDocument(kmlText); } catch (error) { return ''; }
+    const elements = Array.from(xml.getElementsByTagName('*'));
+    const networkLink = elements.find(element => String(element.localName || element.nodeName || '').split(':').pop() === 'NetworkLink');
+    if (!networkLink) return '';
+    const href = Array.from(networkLink.getElementsByTagName('*')).find(element => String(element.localName || element.nodeName || '').split(':').pop() === 'href');
+    return href ? String(href.textContent || '').trim() : '';
+  }
+
+  function hasKmlBoundaryGeometry(kmlText) {
+    let xml;
+    try { xml = parseKmlDocument(kmlText); } catch (error) { return false; }
+    return Array.from(xml.getElementsByTagName('*')).some(element => {
+      const name = String(element.localName || element.nodeName || '').split(':').pop();
+      return name === 'Polygon' || name === 'LineString';
+    });
+  }
+
+  function normalizeFullKmlUrl(value) {
+    let url;
+    try { url = new URL(String(value || '').trim()); } catch (error) {
+      throw new Error('O NetworkLink do arquivo não possui um endereço válido.');
+    }
+    const host = url.hostname.toLowerCase();
+    if (!(host === 'google.com' || host === 'www.google.com' || host.endsWith('.google.com')) || !/\/maps\/d\//i.test(url.pathname)) {
+      throw new Error('Por segurança, somente o NetworkLink do Google My Maps pode ser utilizado.');
+    }
+    const expectedMapId = state.bootstrap?.mapConfig?.sourceMapId || '';
+    const receivedMapId = url.searchParams.get('mid') || '';
+    if (expectedMapId && receivedMapId && receivedMapId !== expectedMapId) {
+      throw new Error('O arquivo pertence a outro mapa. Utilize o mapa CPC indicado na Página 6.');
+    }
+    if (expectedMapId && !receivedMapId) url.searchParams.set('mid', expectedMapId);
+    url.searchParams.set('forcekml', '1');
+    return url.toString();
+  }
+
+  async function fetchNetworkLinkedKml(fullKmlUrl) {
+    const response = await fetch(fullKmlUrl, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+    if (!response.ok) throw new Error('O mapa completo retornou HTTP ' + response.status + '.');
+    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+    const fileName = contentType.includes('zip') || contentType.includes('kmz') ? 'mapa-completo.kmz' : 'mapa-completo.kml';
+    const text = await readKmlOrKmzBuffer(await response.arrayBuffer(), fileName);
+    if (!/<kml(?:\s|>)/i.test(String(text || ''))) {
+      throw new Error('O endereço não devolveu um KML/KMZ completo.');
+    }
+    return text;
+  }
+
+  function configureFullMapDownload(fullKmlUrl) {
+    return fullKmlUrl;
+  }
+
+  function triggerFullMapDownload(fullKmlUrl) {
+    configureFullMapDownload(fullKmlUrl);
+    const anchor = document.createElement('a');
+    anchor.href = fullKmlUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  function parseMapBoundariesFromKml(kmlText) {
+    const xml = new DOMParser().parseFromString(String(kmlText || ''), 'application/xml');
+    const parserError = xml.getElementsByTagName('parsererror')[0];
+    if (parserError) throw new Error('O arquivo selecionado não é um KML válido.');
+
+    const boundaries = [];
+    const foundCompanies = new Set();
+
+    function localName(element) {
+      return String(element.localName || element.nodeName || '').split(':').pop();
+    }
+    function directChildText(element, name) {
+      const child = Array.from(element.children || []).find(item => localName(item) === name);
+      return child ? String(child.textContent || '').trim() : '';
+    }
+    function descendants(element, name) {
+      return Array.from(element.getElementsByTagName('*')).filter(item => localName(item) === name);
+    }
+    function walk(element, inheritedCia, path) {
+      const ownName = directChildText(element, 'name');
+      const currentCia = matchMapCiaClient(ownName) || inheritedCia;
+      const nextPath = ownName ? path.concat([ownName]) : path;
+
+      if (localName(element) === 'Placemark') {
+        const cia = matchMapCiaClient(ownName) || currentCia;
+        if (!cia) return;
+        const sourceName = ownName || nextPath.join(' / ') || cia;
+
+        descendants(element, 'Polygon').forEach(polygon => {
+          const coordinateElement = descendants(polygon, 'coordinates')[0];
+          if (!coordinateElement) return;
+          const coordinates = simplifyBoundaryCoordinates(parseKmlCoordinatesClient(coordinateElement.textContent), 7000);
+          if (coordinates.length >= 3) {
+            boundaries.push({ cia, type: 'POLYGON', coordinates, sourceName });
+            foundCompanies.add(cia);
+          }
+        });
+        descendants(element, 'LineString').forEach(line => {
+          const coordinateElement = descendants(line, 'coordinates')[0];
+          if (!coordinateElement) return;
+          const coordinates = simplifyBoundaryCoordinates(parseKmlCoordinatesClient(coordinateElement.textContent), 7000);
+          if (coordinates.length >= 2) {
+            boundaries.push({ cia, type: 'LINE', coordinates, sourceName });
+            foundCompanies.add(cia);
+          }
+        });
+        return;
+      }
+
+      Array.from(element.children || []).forEach(child => walk(child, currentCia, nextPath));
+    }
+
+    walk(xml.documentElement, '', []);
+    const required = ['1ª CIA', '2ª CIA', '3ª CIA'];
+    const missing = required.filter(cia => !foundCompanies.has(cia));
+    if (missing.length) {
+      throw new Error('O arquivo foi aberto, mas não foram encontrados os limites de: ' + missing.join(', ') + '. Use o KML/KMZ exportado do mapa CPC indicado na Página 6.');
+    }
+    if (!boundaries.length) throw new Error('Nenhum polígono ou linha das três Cias foi encontrado no arquivo.');
+    return boundaries;
+  }
+
+  function matchMapCiaClient(value) {
+    const key = String(value || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (/12(?:O)?BPMM1(?:A)?CIA/.test(key) || /12BPMM1CIA/.test(key)) return '1ª CIA';
+    if (/12(?:O)?BPMM2(?:A)?CIA/.test(key) || /12BPMM2CIA/.test(key)) return '2ª CIA';
+    if (/12(?:O)?BPMM3(?:A)?CIA/.test(key) || /12BPMM3CIA/.test(key)) return '3ª CIA';
+    return '';
+  }
+
+  function parseKmlCoordinatesClient(text) {
+    return String(text || '').trim().split(/\s+/).map(token => {
+      const parts = token.split(',');
+      const lng = Number(parts[0]);
+      const lat = Number(parts[1]);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+    }).filter(Boolean);
+  }
+
+  function simplifyBoundaryCoordinates(coordinates, maxPoints) {
+    if (!Array.isArray(coordinates) || coordinates.length <= maxPoints) return coordinates || [];
+    const step = Math.ceil(coordinates.length / maxPoints);
+    const simplified = coordinates.filter((point, index) => index === 0 || index === coordinates.length - 1 || index % step === 0);
+    const first = coordinates[0];
+    const last = coordinates[coordinates.length - 1];
+    if (first && last && (first[0] === last[0] && first[1] === last[1])) {
+      const end = simplified[simplified.length - 1];
+      if (!end || end[0] !== first[0] || end[1] !== first[1]) simplified.push(first);
+    }
+    return simplified;
+  }
+
+  function renderMapStatistics(data) {
+    const summary = data.summary || {};
+    const selectedCia = data.filters?.cia || '1ª, 2ª e 3ª Cia';
+    document.getElementById('mapResultTitle').textContent = `Ocorrências – ${selectedCia}`;
+    document.getElementById('mapResultSubtitle').textContent = `Período de ${formatDate(data.filters?.dateFrom)} a ${formatDate(data.filters?.dateTo)}.`;
+    document.getElementById('mapUpdated').textContent = 'Atualizado em ' + (data.generatedAt || '—');
+    document.getElementById('mapSummary').innerHTML = [
+      ['Ocorrências no período', summary.occurrences || 0, 'Registros após os filtros'],
+      ['Ocorrências no mapa', summary.plottedOccurrences || 0, 'Com coordenadas localizadas'],
+      ['Locais diferentes', summary.uniqueLocations || 0, 'Pontos agrupados por localização'],
+      ['Maior concentração', summary.maxAtSameLocation || 0, 'Ocorrências no mesmo ponto'],
+      ['Sem localização', summary.unlocated || 0, 'Endereços ainda não localizados']
+    ].map(card => `<div class="card map-summary-card"><span>${escapeHtml(card[0])}</span><strong>${card[1]}</strong><small>${escapeHtml(card[2])}</small></div>`).join('');
+
+    const warnings = [];
+    if (data.boundaryWarning) warnings.push(data.boundaryWarning);
+    if (summary.pendingGeocoding) warnings.push(`${summary.pendingGeocoding} ocorrência(s) possuem endereço, mas ainda não aparecem no mapa. Use “Processar endereços pendentes”.`);
+    if (summary.missingAddress) warnings.push(`${summary.missingAddress} ocorrência(s) não possuem endereço cadastrado e precisam ser corrigidas na base para aparecer no mapa.`);
+    if (!data.points?.length && summary.occurrences) warnings.push('Existem ocorrências no período, mas nenhuma possui coordenadas disponíveis ainda.');
+    if (warnings.length) showMapWarning(warnings.join(' ')); else hideMapWarning();
+
+    const geocodeButton = document.getElementById('mapGeocodeButton');
+    geocodeButton.disabled = !summary.pendingGeocoding;
+    geocodeButton.textContent = summary.pendingGeocoding
+      ? `Processar endereços pendentes (${summary.pendingGeocoding})`
+      : 'Endereços processados';
+
+    renderStatisticalMaps(data);
+  }
+
+  function ensureLeafletMaps(center) {
+    if (typeof L === 'undefined') throw new Error('A biblioteca do mapa não foi carregada. Verifique a conexão com a internet e atualize a página.');
+    const initial = [Number(center?.lat) || -23.606995, Number(center?.lng) || -46.653155];
+    const zoom = Number(center?.zoom) || 14;
+    ['heat', 'points'].forEach(key => {
+      if (state.maps[key]) return;
+      const elementId = key === 'heat' ? 'heatMap' : 'pointsMap';
+      const map = L.map(elementId, { zoomControl: true, preferCanvas: true }).setView(initial, zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      state.maps[key] = map;
+      state.mapLayers[key] = L.layerGroup().addTo(map);
+    });
+  }
+
+  function renderStatisticalMaps(data) {
+    ensureLeafletMaps(data.center);
+    state.mapLayers.heat.clearLayers();
+    state.mapLayers.points.clearLayers();
+
+    addMapBoundaries(state.maps.heat, state.mapLayers.heat, data.boundaries || []);
+    addMapBoundaries(state.maps.points, state.mapLayers.points, data.boundaries || []);
+
+    const points = data.points || [];
+    const maxCount = Math.max(1, Number(data.summary?.maxAtSameLocation) || 1);
+    if (points.length && typeof L.heatLayer === 'function') {
+      const heatData = points.map(point => [Number(point.lat), Number(point.lng), Math.max(0.25, Number(point.count) / maxCount)]);
+      L.heatLayer(heatData, {
+        radius: 32,
+        blur: 24,
+        minOpacity: 0.35,
+        maxZoom: 18,
+        gradient: { 0.15: '#fff9a8', 0.45: '#ffd54f', 0.7: '#ff9800', 0.88: '#f44336', 1: '#b71c1c' }
+      }).addTo(state.mapLayers.heat);
+    }
+
+    points.forEach(point => {
+      const count = Number(point.count) || 1;
+      const level = count === 1 ? 'green' : (count === 2 ? 'orange' : 'red');
+      const label = count >= 100 ? '99+' : String(count);
+      const icon = L.divIcon({
+        className: 'stat-point-div-icon',
+        html: `<div class="stat-point-marker ${level}">${escapeHtml(label)}</div>`,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
+        popupAnchor: [0, -22]
+      });
+      const marker = L.marker([Number(point.lat), Number(point.lng)], { icon });
+      const natureHtml = (point.natures || []).map(item => `<li>${escapeHtml(item.label)}: <strong>${Number(item.value) || 0}</strong></li>`).join('');
+      marker.bindPopup(`<div class="stat-popup"><strong>${count} ocorrência${count === 1 ? '' : 's'} no local</strong><span>${escapeHtml(point.address || 'Endereço não informado')}</span><span><b>CIA:</b> ${escapeHtml(point.cia || '—')}</span><span><b>Período no ponto:</b> ${formatDate(point.firstDate)} a ${formatDate(point.lastDate)}</span>${natureHtml ? `<ul>${natureHtml}</ul>` : ''}</div>`, { maxWidth: 330 });
+      marker.addTo(state.mapLayers.points);
+    });
+
+    const bounds = collectMapBounds(data.boundaries || [], points);
+    ['heat', 'points'].forEach(key => {
+      if (bounds && bounds.isValid()) state.maps[key].fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
+      else state.maps[key].setView([data.center.lat, data.center.lng], data.center.zoom || 14);
+    });
+    window.setTimeout(() => {
+      state.maps.heat.invalidateSize();
+      state.maps.points.invalidateSize();
+    }, 80);
+  }
+
+  function addMapBoundaries(map, layerGroup, boundaries) {
+    const styles = {
+      '1ª CIA': { color: '#6a1b9a', fillColor: '#ce93d8' },
+      '2ª CIA': { color: '#8e24aa', fillColor: '#e1bee7' },
+      '3ª CIA': { color: '#512da8', fillColor: '#b39ddb' }
+    };
+    boundaries.forEach(boundary => {
+      const coordinates = (boundary.coordinates || []).map(point => [Number(point[0]), Number(point[1])]).filter(point => Number.isFinite(point[0]) && Number.isFinite(point[1]));
+      if (coordinates.length < 2) return;
+      const style = styles[boundary.cia] || styles['1ª CIA'];
+      const layer = boundary.type === 'LINE'
+        ? L.polyline(coordinates, { color: style.color, weight: 4, opacity: 0.9, dashArray: '8 6' })
+        : L.polygon(coordinates, { color: style.color, weight: 3, opacity: 0.95, fillColor: style.fillColor, fillOpacity: 0.08 });
+      layer.bindTooltip(boundary.cia, { sticky: true, direction: 'top', className: 'cia-boundary-tooltip' });
+      layer.addTo(layerGroup);
+    });
+  }
+
+  function collectMapBounds(boundaries, points) {
+    if (typeof L === 'undefined') return null;
+    const latLngs = [];
+    boundaries.forEach(boundary => (boundary.coordinates || []).forEach(point => {
+      const lat = Number(point[0]);
+      const lng = Number(point[1]);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) latLngs.push([lat, lng]);
+    }));
+    points.forEach(point => {
+      const lat = Number(point.lat);
+      const lng = Number(point.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) latLngs.push([lat, lng]);
+    });
+    return latLngs.length ? L.latLngBounds(latLngs) : null;
+  }
+
+  function switchMapTab(tab) {
+    state.activeMapTab = tab === 'points' ? 'points' : 'heat';
+    document.querySelectorAll('[data-map-tab]').forEach(button => button.classList.toggle('active', button.dataset.mapTab === state.activeMapTab));
+    document.querySelectorAll('.map-panel').forEach(panel => panel.classList.toggle('active', panel.id === 'map-panel-' + state.activeMapTab));
+    window.setTimeout(() => state.maps[state.activeMapTab]?.invalidateSize(), 80);
+  }
+
+  function showMapWarning(message) {
+    const box = document.getElementById('mapWarning');
+    box.textContent = message;
+    box.classList.remove('hidden');
+  }
+
+  function hideMapWarning() {
+    const box = document.getElementById('mapWarning');
+    box.textContent = '';
+    box.classList.add('hidden');
+  }
+
+  async function loadConsulta() {
+    setSectionLoading('queryTable');
+    try {
+      const visitCounts = [1, 2, 3]
+        .filter(number => document.getElementById(`queryVisit${number}`).checked)
+        .map(String);
+      state.query = await server('getConsulta', {
+        year: Number(document.getElementById('queryYear').value),
+        month: Number(document.getElementById('queryMonth').value),
+        search: document.getElementById('querySearch').value,
+        visitCounts: visitCounts,
+        onlyFiles: document.getElementById('queryOnlyFiles').checked
+      });
+      document.getElementById('queryCount').textContent = `${state.query.length} ocorrência${state.query.length === 1 ? '' : 's'}`;
+      renderConsulta();
+    } catch (error) {
+      showToast(error.message, 'error');
+      document.getElementById('queryTable').innerHTML = emptyHtml('Não foi possível consultar os registros.');
+    }
+  }
+
+  function renderConsulta() {
+    const container = document.getElementById('queryTable');
+    if (!state.query.length) {
+      container.innerHTML = emptyHtml('Nenhuma ocorrência encontrada para os filtros selecionados.');
+      return;
+    }
+    container.innerHTML = `<table><thead><tr><th>Data</th><th>Vítima</th><th>Autor</th><th>BOPM / BOPC</th><th>Natureza</th><th>CIA</th><th>Nº de visitas realizadas</th><th>Status</th><th>Arquivos</th><th>Ação</th></tr></thead><tbody>${state.query.map((record, index) => {
+      const visitCount = Math.max(0, Math.min(3, Number(record.visitasRealizadas) || 0));
+      const visitLabel = visitCount === 1 ? '1 visita realizada' : `${visitCount} visitas realizadas`;
+      const visitSteps = [1, 2, 3].map(number =>
+        `<span class="visit-step${visitCount >= number ? ' done' : ''}">${number}ª ${visitCount >= number ? 'REALIZADA' : 'PENDENTE'}</span>`
+      ).join('');
+      return `<tr><td>${formatDate(record.dataOcorrencia)}<br><small>${escapeHtml(record.qtr || '')}</small></td><td><strong>${escapeHtml(record.nomeVitima)}</strong><br><small>${escapeHtml(record.id)}</small></td><td>${escapeHtml(record.nomeAutor || '—')}</td><td>${escapeHtml(record.bopm || '—')}<br>${escapeHtml(record.bopc || '—')}</td><td>${escapeHtml(record.natureza || '—')}</td><td>${escapeHtml(record.cia || '—')}</td><td><div class="visit-count-cell"><span class="visit-count-badge${record.limiteVisitasAtingido ? ' maxed' : ''}">${visitCount}</span><div><strong>${visitLabel}</strong><small>de 3 permitidas</small><div class="visit-steps">${visitSteps}</div>${record.limiteVisitasAtingido ? '<span class="visit-limit-text">Limite atingido</span>' : ''}</div></div></td><td><span class="status-pill">${escapeHtml(record.statusCaso || '—')}</span></td><td>${record.hasFiles ? `<div class="linked-files-cell"><span class="file-indicator">${record.links.length} arquivo(s) vinculado(s)</span><div class="linked-file-list">${record.links.map((link, linkIndex) => `<a class="linked-file-link" href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer" title="${escapeAttr(link)}">Abrir arquivo ${linkIndex + 1}</a>`).join('')}</div></div>` : '<span class="no-file">Sem arquivos</span>'}</td><td><div class="table-actions"><button class="button summary small" data-summary-index="${index}" type="button">Ver resumo</button><button class="button secondary small" data-file-index="${index}" type="button">Vincular arquivos</button><button class="button danger small" data-delete-index="${index}" type="button">Excluir</button></div></td></tr>`;
+    }).join('')}</tbody></table>`;
+    container.querySelectorAll('[data-summary-index]').forEach(button => button.addEventListener('click', () => openOccurrenceSummaryModal(Number(button.dataset.summaryIndex))));
+    container.querySelectorAll('[data-file-index]').forEach(button => button.addEventListener('click', () => openFilesModal(Number(button.dataset.fileIndex))));
+    container.querySelectorAll('[data-delete-index]').forEach(button => button.addEventListener('click', () => confirmDeleteOccurrence(Number(button.dataset.deleteIndex))));
+  }
+
+  async function openOccurrenceSummaryModal(index) {
+    const record = state.query[index];
+    if (!record) return;
+    document.getElementById('occurrenceSummaryTitle').textContent = `${record.nomeVitima || 'Ocorrência'} — ${formatDate(record.dataOcorrencia)}`;
+    document.getElementById('occurrenceSummaryContent').innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto 10px"></div>Carregando resumo...</div>';
+    openModal('occurrenceSummaryModal');
+    try {
+      const data = await server('getOccurrenceSummary', record.id);
+      renderOccurrenceSummary(data);
+    } catch (error) {
+      document.getElementById('occurrenceSummaryContent').innerHTML = emptyHtml('Não foi possível carregar o resumo da ocorrência.');
+      showToast(error.message, 'error');
+    }
+  }
+
+  function renderOccurrenceSummary(data) {
+    const visits = Array.isArray(data.visits) ? data.visits : [];
+    const visitHtml = visits.length ? visits.map(visit => `
+      <article class="summary-visit-card">
+        <div class="summary-visit-heading"><strong>${escapeHtml(formatVisitSequence(visit.sequencia))}</strong><span class="status-pill">${escapeHtml(visit.statusVisita || '—')}</span></div>
+        <div class="summary-mini-grid">
+          ${summaryItem('Tipo', visit.tipoVisita || 'Não informado')}
+          ${summaryItem('Agendada', `${visit.dataAgendada || '—'}${visit.horaAgendada ? ' às ' + visit.horaAgendada : ''}`)}
+          ${summaryItem('Realização', visit.dataRealizacao ? `${visit.dataRealizacao}${visit.horaRealizacao ? ' às ' + visit.horaRealizacao : ''}` : 'Ainda não realizada')}
+          ${summaryItem('Resultado', visit.resultadoVisita || '—')}
+          ${summaryItem('FONAR', visit.fonarPreenchido ? `${visit.fonarPreenchido}${visit.fonarArquivoNome ? ' — ' + visit.fonarArquivoNome : ''}` : 'Não informado')}
+          ${summaryItem('Nº do BO-e complementar', visit.numeroBoeComplementar || 'Não informado')}
+        </div>
+        ${visit.fonarArquivoUrl ? `<a class="summary-file-link" href="${escapeAttr(visit.fonarArquivoUrl)}" target="_blank" rel="noopener noreferrer">Abrir FONAR anexado</a>` : ''}
+        ${visit.observacoesVisita ? `<div class="summary-observation"><span>Observações da visita</span><p>${escapeHtml(visit.observacoesVisita)}</p></div>` : ''}
+      </article>`).join('') : '<div class="empty-state">Nenhuma visita registrada para esta ocorrência.</div>';
+
+    document.getElementById('occurrenceSummaryContent').innerHTML = `
+      <div class="summary-status-line"><span class="status-pill">${escapeHtml(data.statusCaso || '—')}</span><strong>${escapeHtml(data.natureza || 'Natureza não informada')}</strong></div>
+      <div class="detail-grid summary-main-grid">
+        ${detailHtml('Data / QTR', `${data.dataOcorrencia || '—'} ${data.qtr || ''}`)}
+        ${detailHtml('BOPM / BOPC', [data.bopm, data.bopc].filter(Boolean).join(' / ') || 'Não informado')}
+        ${detailHtml('Vítima', data.nomeVitima)}
+        ${detailHtml('Autor', data.nomeAutor)}
+        ${detailHtml('Telefone', data.telefone)}
+        ${detailHtml('CIA', data.cia)}
+        ${detailHtml('Endereço', data.endereco, true)}
+        ${detailHtml('Contato telefônico', data.resultadoLigacao || 'Ainda não concluído')}
+        ${detailHtml('Aceitou contato / deseja visita', `${data.aceitouLigacao || '—'} / ${data.desejaVisita || '—'}`)}
+        ${detailHtml('Resumo do ocorrido', data.breveHistorico || 'Não informado', true)}
+      </div>
+      <div class="summary-section-title"><span class="eyebrow">HISTÓRICO DO ACOMPANHAMENTO</span><h3>Visitas registradas</h3></div>
+      <div class="summary-visits-list">${visitHtml}</div>`;
+  }
+
+  function summaryItem(label, value) {
+    return `<div class="summary-mini-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '—')}</strong></div>`;
+  }
+
+  async function confirmDeleteOccurrence(index) {
+    const record = state.query[index];
+    if (!record) return;
+    const victimName = record.nomeVitima || 'esta ocorrência';
+    const firstConfirmation = askConfirmation(`Deseja realmente excluir a ocorrência de ${victimName}? Esta ação removerá também os acompanhamentos vinculados.`);
+    if (!firstConfirmation) return;
+    const finalConfirmation = askConfirmation(`Confirma a exclusão definitiva da ocorrência de ${victimName}? Esta ação não poderá ser desfeita.`);
+    if (!finalConfirmation) return;
+    setBusy(true, 'Excluindo ocorrência...');
+    try {
+      const response = await server('excluirOcorrencia', { id: record.id });
+      showToast(response.message, 'success');
+      await loadConsulta();
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openFilesModal(index) {
+    const record = state.query[index];
+    document.getElementById('filesRecordId').value = record.id;
+    document.getElementById('filesModalTitle').textContent = record.nomeVitima + ' – ' + formatDate(record.dataOcorrencia);
+    document.getElementById('filesLinks').value = record.linksArquivos || '';
+    document.getElementById('filesNotes').value = record.observacoesArquivos || '';
+    renderExistingLinks(record.links || []);
+    openModal('filesModal');
+  }
+
+  function renderExistingLinks(links) {
+    const container = document.getElementById('existingLinks');
+    container.innerHTML = links.length ? `<span class="eyebrow">LINKS ATUAIS</span>${links.map((link, index) => `<a href="${escapeAttr(link)}" target="_blank" rel="noopener noreferrer">Abrir arquivo ${index + 1}: ${escapeHtml(link)}</a>`).join('')}` : '';
+  }
+
+  async function submitFilesForm(event) {
+    event.preventDefault();
+    const payload = { id: document.getElementById('filesRecordId').value, linksArquivos: document.getElementById('filesLinks').value, observacoesArquivos: document.getElementById('filesNotes').value };
+    setBusy(true, 'Vinculando arquivos...');
+    try {
+      const response = await server('salvarArquivos', payload);
+      showToast(response.message, 'success');
+      closeModal('filesModal');
+      await loadConsulta();
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function detailHtml(label, value, wide) {
+    return `<div class="detail-item${wide ? ' wide' : ''}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || 'Não informado')}</strong></div>`;
+  }
+
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+  function setSectionLoading(id) { document.getElementById(id).innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto 10px"></div>Carregando...</div>'; }
+  function emptyHtml(message) { return `<div class="empty-state">${escapeHtml(message)}</div>`; }
+
+  function setBusy(active, message) {
+    const overlay = document.getElementById('loadingOverlay');
+    if (message) overlay.querySelector('strong').textContent = message;
+    overlay.classList.toggle('hidden', !active);
+  }
+  function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+
+  function showToast(message, type = '') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast show ' + type;
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.className = 'toast', 4300);
+  }
+
+  function serverForm(functionName, formElement) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(error => reject(new Error(error?.message || String(error))))[functionName](formElement);
+    });
+  }
+
+  // todas as chamadas passam pelo App, que confirma a conta e repassa ao Registro
+  function server(functionName, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(error => reject(new Error(error?.message || String(error))))
+        .api(functionName, JSON.parse(JSON.stringify(args)));
+    });
+  }
+
+  function formatTime(value) {
+    const text = String(value || '').trim();
+    if (!text) return 'HORÁRIO NÃO INFORMADO';
+    const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(text);
+    if (match) return `${String(Number(match[1])).padStart(2, '0')}:${match[2]}`;
+    return 'HORÁRIO INVÁLIDO';
+  }
+
+  function formatTimeForInput(value) {
+    const formatted = formatTime(value);
+    return /^\d{2}:\d{2}$/.test(formatted) ? formatted : '';
+  }
+
+  function formatDate(value) {
+    if (!value) return '—';
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+  }
+  function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[char])); }
+  function escapeAttr(value) { return escapeHtml(value); }
+})();
+</script>

@@ -1,0 +1,129 @@
+<style>
+/* ===== Acabamento visual (só aparência; não muda nenhuma função) ===== */
+body{font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+
+/* Fundo animado: fica atrás de tudo, bem lento, fora da área de trabalho */
+.fundo-animado{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.fundo-animado span{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;will-change:transform}
+.fundo-animado span:nth-child(1){width:46vw;height:46vw;left:18vw;top:-14vw;background:radial-gradient(circle,var(--lilac-300),transparent 68%);animation:flutuar1 70s ease-in-out infinite alternate}
+.fundo-animado span:nth-child(2){width:38vw;height:38vw;right:-10vw;top:30vh;background:radial-gradient(circle,color-mix(in srgb,var(--lilas) 30%,#f3b8d6),transparent 68%);animation:flutuar2 85s ease-in-out infinite alternate}
+.fundo-animado span:nth-child(3){width:34vw;height:34vw;left:30vw;bottom:-16vw;background:radial-gradient(circle,color-mix(in srgb,var(--lilas) 25%,#b9c8f5),transparent 68%);animation:flutuar3 95s ease-in-out infinite alternate}
+@keyframes flutuar1{to{transform:translate(12vw,8vh) scale(1.15)}}
+@keyframes flutuar2{to{transform:translate(-14vw,-10vh) scale(.9)}}
+@keyframes flutuar3{to{transform:translate(10vw,-12vh) scale(1.1)}}
+:root[data-modo=escuro] .fundo-animado span{opacity:.22}
+:root[data-anima=nao] .fundo-animado{display:none}
+.app-shell{position:relative;z-index:1}
+
+/* Barra lateral */
+.sidebar{background:linear-gradient(185deg,var(--lilac-950) 0%,var(--lilac-900) 45%,var(--lilac-800) 100%);box-shadow:8px 0 40px rgba(40,14,55,.18);border-right:1px solid rgba(255,255,255,.06);
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.sidebar::before{content:"";position:absolute;left:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.12),transparent 70%);pointer-events:none}
+.brand{border-bottom-color:rgba(255,255,255,.1)}
+.brand-mark{border-radius:18px;box-shadow:0 10px 24px rgba(0,0,0,.28),0 0 0 2px rgba(255,255,255,.18)}
+.brand strong{font-size:18px;letter-spacing:-.02em}
+.nav-menu{gap:4px}
+.nav-button{position:relative;padding:11px 12px;border-radius:12px;font-weight:650;color:rgba(255,255,255,.78);transition:background .25s ease,color .25s ease,transform .25s ease}
+.nav-button span{width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.09);font-weight:800;transition:.25s ease}
+.nav-button:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateX(3px)}
+.nav-button.active{background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.06));color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.nav-button.active::before{content:"";position:absolute;left:-18px;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.6)}
+.nav-button.active span{background:#fff;color:var(--lilac-800);box-shadow:0 4px 10px rgba(0,0,0,.18)}
+.nav-button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.sidebar-footer{border-top-color:rgba(255,255,255,.1)}
+
+/* Topo */
+.topbar h1{font-size:30px;font-weight:800;letter-spacing:-.035em}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;width:max-content;padding:4px 10px;border-radius:999px;background:var(--lilac-100);color:var(--lilac-800);letter-spacing:.1em}
+.topbar-copy .eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lilac-700);box-shadow:0 0 0 3px color-mix(in srgb,var(--lilac-700) 20%,transparent)}
+.section-heading .eyebrow,.card .eyebrow{padding:0;background:none}
+.brand-hero-card{background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(255,255,255,.62));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.7);box-shadow:0 1px 2px rgba(60,30,80,.05),0 16px 40px rgba(60,30,80,.12)}
+:root[data-modo=escuro] .brand-hero-card{background:rgba(28,26,33,.75)!important}
+.topbar-buttons .button{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+/* Cartões, campos e botões */
+.card,#page-extra .cartao{border:1px solid color-mix(in srgb,var(--lilas) 10%,#ece6f0);border-radius:20px;
+  box-shadow:0 1px 2px rgba(60,30,80,.04),0 10px 30px rgba(60,30,80,.07)}
+:root[data-modo=escuro] .card,:root[data-modo=escuro] #page-extra .cartao{border-color:var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.info-banner{border-radius:16px;border-color:color-mix(in srgb,var(--lilas) 18%,#fff);background:linear-gradient(90deg,var(--lilac-100),color-mix(in srgb,var(--lilac-100) 40%,#fff))}
+:root[data-modo=escuro] .info-banner{background:var(--lilac-100)}
+.field label{color:#6a5c74}
+input,select,textarea{border-radius:12px;border-color:color-mix(in srgb,var(--lilas) 16%,#ddd5e2);background:#fdfcfe;transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--lilas) 35%,#ddd5e2)}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--lilac-600);box-shadow:0 0 0 4px color-mix(in srgb,var(--lilas) 14%,transparent)}
+.button,#page-extra .bt{border-radius:12px;font-weight:750;letter-spacing:.01em;transition:transform .15s ease,box-shadow .2s ease,filter .2s ease}
+.button.primary,#page-extra .bt:not(.sec){background:linear-gradient(135deg,color-mix(in srgb,var(--lilas) 92%,#fff),var(--lilac-800));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 18px color-mix(in srgb,var(--lilas) 30%,transparent)}
+.button.primary:hover,#page-extra .bt:not(.sec):hover{filter:brightness(1.06);transform:translateY(-1px)}
+.button:active,#page-extra .bt:active{transform:translateY(0) scale(.98)}
+.button:focus-visible,#page-extra .bt:focus-visible,#page-extra .imprimir:focus-visible{outline:3px solid color-mix(in srgb,var(--lilas) 40%,transparent);outline-offset:2px}
+.form-actions{background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--lilas) 4%,#fff))}
+th{background:color-mix(in srgb,var(--lilas) 9%,#fff)}
+.record-item{border-radius:14px;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+.record-item:hover{transform:translateY(-1px)}
+.kpi-card{transition:transform .25s ease,box-shadow .25s ease}.kpi-card:hover{transform:translateY(-2px)}
+.kpi-value{background:linear-gradient(135deg,var(--lilac-950),var(--lilac-700));-webkit-background-clip:text;background-clip:text;color:transparent}
+:root[data-modo=escuro] .kpi-value{background:none;color:#fff}
+
+/* Troca de aba suave */
+.page.active{animation:entrarAba .38s cubic-bezier(.2,.7,.2,1)}
+@keyframes entrarAba{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tutorial:not(.hidden){animation:entrarAba .4s ease}
+
+/* Botão flutuante de impressão */
+.imprimir-flutuante{background:linear-gradient(135deg,color-mix(in srgb,var(--lilas) 90%,#fff),var(--lilac-900))}
+.imprimir-flutuante::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid color-mix(in srgb,var(--lilas) 35%,transparent);opacity:0;transition:.3s ease}
+.imprimir-flutuante:hover::after{opacity:1;inset:-8px}
+
+/* Painel de aparência */
+.painel-tema{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:color-mix(in srgb,var(--cartao) 92%,transparent);animation:entrarAba .25s ease}
+.anima-linha{display:flex;align-items:center;justify-content:space-between;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--ink)}
+.chave{position:relative;width:44px;height:24px;border-radius:999px;border:0;background:#cfc6d6;cursor:pointer;transition:background .25s ease}
+.chave::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .25s ease}
+.chave[aria-checked=true]{background:var(--lilac-700)}.chave[aria-checked=true]::after{transform:translateX(20px)}
+
+/* Modo escuro: textos de destaque mais claros */
+:root[data-modo=escuro] .eyebrow,:root[data-modo=escuro] .tutorial strong,:root[data-modo=escuro] .info-banner strong,:root[data-modo=escuro] .brand-hero-copy span,
+:root[data-modo=escuro] #page-extra .etapa b,:root[data-modo=escuro] #page-extra .dica b{color:color-mix(in srgb,var(--lilas) 45%,#fff)!important}
+:root[data-modo=escuro] .eyebrow{background:color-mix(in srgb,var(--lilas) 22%,#1b1920)}
+:root[data-modo=escuro] .card .eyebrow{background:none}
+:root[data-modo=escuro] .form-actions{background:#1c1a21}
+:root[data-modo=escuro] th{background:color-mix(in srgb,var(--lilas) 18%,#1c1a21)}
+
+
+/* ===== Menu lateral robusto: ícones, grupos e aba ativa em cartão claro ===== */
+.nav-menu{gap:5px}
+.nav-grupo{margin:14px 8px 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.nav-grupo:first-child{margin-top:2px}
+.nav-button{min-height:48px;padding:8px 12px 8px 8px;gap:12px;border-radius:14px;font-size:13.5px;font-weight:650;color:rgba(255,255,255,.82);
+  border:1px solid transparent;background:transparent}
+.nav-icone{width:34px!important;height:34px!important;flex:none;border-radius:11px!important;display:grid!important;place-items:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.04))!important;border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.nav-icone svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nav-button:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.1);color:#fff;transform:translateX(2px)}
+.nav-button:hover .nav-icone{background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08))!important}
+.nav-button.active{background:linear-gradient(135deg,#ffffff,#f3ebf9);color:var(--lilac-900);border-color:rgba(255,255,255,.9);
+  box-shadow:0 10px 24px rgba(20,6,30,.35),inset 0 -2px 0 color-mix(in srgb,var(--lilas) 18%,transparent);transform:none;font-weight:750}
+.nav-button.active .nav-icone{background:linear-gradient(145deg,var(--lilac-600),var(--lilac-800))!important;color:#fff;border-color:transparent;
+  box-shadow:0 6px 14px color-mix(in srgb,var(--lilas) 40%,transparent)}
+.nav-button.active::before{left:-17px;top:12px;bottom:12px;background:#fff}
+@media(max-width:980px){.nav-grupo{display:none}.nav-button{min-height:42px;padding:5px 12px 5px 5px}.nav-icone{width:30px!important;height:30px!important}}
+
+/* Celular: menu vira uma faixa de abas que desliza para o lado */
+@media(max-width:980px){
+  .sidebar{position:sticky!important;top:0;height:auto!important;padding:12px 12px 10px;gap:10px;z-index:40;box-shadow:0 8px 24px rgba(40,14,55,.25)}
+  .brand{padding:0 4px 10px}.brand-mark{width:42px;height:42px;border-radius:13px}
+  .nav-menu{display:flex!important;overflow-x:auto;gap:8px;padding-bottom:4px;scroll-snap-type:x proximity;scrollbar-width:none}
+  .nav-menu::-webkit-scrollbar{display:none}
+  .nav-button{flex:none;width:auto!important;white-space:nowrap;padding:8px 12px 8px 8px;background:rgba(255,255,255,.08);scroll-snap-align:start}
+  .nav-button:hover{transform:none}
+  .nav-button.active::before{display:none}
+  .sidebar-footer{display:none}
+  .sidebar::before{display:none}
+}
+
+/* Quem prefere menos movimento: tudo parado */
+@media (prefers-reduced-motion:reduce){.fundo-animado{display:none}.page.active,.tutorial,.painel-tema{animation:none!important}*{transition:none!important}}
+@media print{.fundo-animado{display:none!important}.page.active{animation:none}}
+</style>
